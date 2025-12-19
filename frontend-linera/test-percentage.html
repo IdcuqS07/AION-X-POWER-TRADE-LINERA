@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Percentage Feature</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            padding: 40px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 15px;
+        }
+        .trade-amount-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .amount-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .amount-display {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #00ccff;
+        }
+        .percentage-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: linear-gradient(to right, 
+                rgba(255, 68, 68, 0.3) 0%, 
+                rgba(255, 170, 0, 0.3) 25%, 
+                rgba(0, 255, 136, 0.3) 50%, 
+                rgba(0, 204, 255, 0.3) 100%
+            );
+            outline: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        .percentage-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00ff88, #00ccff);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+        .percentage-marks {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85em;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(45deg, #00ff88, #00ccff);
+            border: none;
+            border-radius: 10px;
+            color: #000;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🧪 Test Trade Percentage Feature</h2>
+        
+        <div class="trade-amount-section">
+            <div class="amount-header">
+                <label>💰 Trade Amount</label>
+                <span class="amount-display">
+                    <span id="trade-percentage">25</span>% 
+                    (<span id="trade-amount-usd">$2,500</span>)
+                </span>
+            </div>
+            <input 
+                type="range" 
+                id="trade-percentage-slider" 
+                min="10" 
+                max="100" 
+                value="25" 
+                step="5"
+                class="percentage-slider"
+            />
+            <div class="percentage-marks">
+                <span>10%</span>
+                <span>25%</span>
+                <span>50%</span>
+                <span>75%</span>
+                <span>100%</span>
+            </div>
+        </div>
+
+        <button class="btn" id="execute-btn">Execute BUY BTC (25% - $2,500)</button>
+
+        <div style="margin-top: 30px; padding: 20px; background: rgba(0, 255, 136, 0.1); border-radius: 10px;">
+            <h3>✅ Feature Working:</h3>
+            <ul style="line-height: 2;">
+                <li>Slider range: 10% - 100%</li>
+                <li>Step: 5%</li>
+                <li>Portfolio value: $10,000</li>
+                <li>Real-time calculation</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const portfolioValue = 10000;
+        const slider = document.getElementById('trade-percentage-slider');
+        const percentageDisplay = document.getElementById('trade-percentage');
+        const amountDisplay = document.getElementById('trade-amount-usd');
+        const executeBtn = document.getElementById('execute-btn');
+
+        slider.addEventListener('input', (e) => {
+            const percentage = parseInt(e.target.value);
+            const amount = (portfolioValue * percentage) / 100;
+            
+            percentageDisplay.textContent = percentage;
+            amountDisplay.textContent = `$${amount.toFixed(0)}`;
+            executeBtn.textContent = `Execute BUY BTC (${percentage}% - $${amount.toFixed(0)})`;
+        });
+
+        executeBtn.addEventListener('click', () => {
+            const percentage = parseInt(slider.value);
+            const amount = (portfolioValue * percentage) / 100;
+            alert(`Trade Executed!\n\nPercentage: ${percentage}%\nAmount: $${amount.toFixed(0)}\nPortfolio: $${portfolioValue}`);
+        });
+    </script>
+</body>
+</html>

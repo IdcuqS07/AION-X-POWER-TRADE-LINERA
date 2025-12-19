@@ -97,6 +97,110 @@ body {
     white-space: nowrap;
 }
 
+/* Trade Amount Percentage Section */
+.trade-amount-section {
+    margin: 20px 0;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.amount-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.amount-header label {
+    font-size: 1em;
+    font-weight: 600;
+    color: #00ff88;
+}
+
+.amount-display {
+    font-size: 1.2em;
+    font-weight: 700;
+    color: #00ccff;
+}
+
+.amount-display #trade-percentage {
+    font-size: 1.3em;
+    color: #00ff88;
+}
+
+.percentage-slider {
+    width: 100%;
+    height: 8px;
+    border-radius: 5px;
+    background: linear-gradient(to right, 
+        rgba(255, 68, 68, 0.3) 0%, 
+        rgba(255, 170, 0, 0.3) 25%, 
+        rgba(0, 255, 136, 0.3) 50%, 
+        rgba(0, 204, 255, 0.3) 100%
+    );
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+    margin: 10px 0;
+}
+
+.percentage-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #00ff88, #00ccff);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+    transition: all 0.2s;
+}
+
+.percentage-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.8);
+}
+
+.percentage-slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #00ff88, #00ccff);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+    transition: all 0.2s;
+}
+
+.percentage-slider::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.8);
+}
+
+.percentage-marks {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.percentage-marks span {
+    flex: 1;
+    text-align: center;
+}
+
+.percentage-marks span:first-child {
+    text-align: left;
+}
+
+.percentage-marks span:last-child {
+    text-align: right;
+}
+
 /* Wallet Dropdown */
 .wallet-dropdown {
     position: absolute;

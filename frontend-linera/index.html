@@ -278,6 +278,33 @@
                         <div class="coin-btn active" data-coin="BNB">BNB</div>
                     </div>
 
+                    <!-- Trade Amount Percentage -->
+                    <div class="trade-amount-section">
+                        <div class="amount-header">
+                            <label>💰 Trade Amount</label>
+                            <span class="amount-display">
+                                <span id="trade-percentage">25</span>% 
+                                (<span id="trade-amount-usd">$2,500</span>)
+                            </span>
+                        </div>
+                        <input 
+                            type="range" 
+                            id="trade-percentage-slider" 
+                            min="10" 
+                            max="100" 
+                            value="25" 
+                            step="5"
+                            class="percentage-slider"
+                        />
+                        <div class="percentage-marks">
+                            <span>10%</span>
+                            <span>25%</span>
+                            <span>50%</span>
+                            <span>75%</span>
+                            <span>100%</span>
+                        </div>
+                    </div>
+
                     <div class="button-group">
                         <button class="btn" id="btn-signal">Generate New Signal</button>
                         <button class="btn btn-secondary" id="btn-execute" disabled>Execute AI Trade</button>

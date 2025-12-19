@@ -81,7 +81,11 @@ const elements = {
     blockHeight: document.getElementById('block-height'),
     deployedApps: document.getElementById('deployed-apps'),
     btnCheckNetwork: document.getElementById('btn-check-network'),
-    btnClearHistory: document.getElementById('btn-clear-history')
+    btnClearHistory: document.getElementById('btn-clear-history'),
+    // Trade percentage
+    tradePercentageSlider: document.getElementById('trade-percentage-slider'),
+    tradePercentage: document.getElementById('trade-percentage'),
+    tradeAmountUsd: document.getElementById('trade-amount-usd')
 };
 
 // Store full values for copying
@@ -92,6 +96,7 @@ let fullOwner = '';
 let selectedCoin = 'BNB';
 let selectedPlatform = 'linera';
 let currentSignal = null;
+let tradePercentage = 25; // Default 25%
 let portfolio = {
     totalValue: 10000,
     pnl: 0,
@@ -715,9 +720,10 @@ function generateSignalEnhanced() {
     elements.riskBar.style.width = `${riskScore}%`;
     elements.targetPrice.textContent = `$${targetPrice.toFixed(2)}`;
     
-    // Enable execute button
+    // Enable execute button with percentage
     elements.btnExecute.disabled = false;
-    elements.btnExecute.textContent = `Execute ${signal} ${selectedCoin}`;
+    const tradeAmount = (portfolio.totalValue * tradePercentage) / 100;
+    elements.btnExecute.textContent = `Execute ${signal} ${selectedCoin} (${tradePercentage}% - $${tradeAmount.toFixed(0)})`;
     
     updateStatus(elements.globalStatus, `✅ AI Signal: ${signal} ${selectedCoin}`, 'success');
     console.log('🧠 Signal generated:', currentSignal);
@@ -732,14 +738,18 @@ function executeAITrade() {
         return;
     }
     
-    updateStatus(elements.globalStatus, '⚡ Executing trade...', 'info');
+    // Calculate trade amount based on percentage
+    const tradeAmount = (portfolio.totalValue * tradePercentage) / 100;
+    
+    updateStatus(elements.globalStatus, `⚡ Executing ${tradePercentage}% trade ($${tradeAmount.toFixed(0)})...`, 'info');
     
     // Create trade record
     const trade = {
         id: Date.now(),
         coin: currentSignal.coin,
         type: currentSignal.signal,
-        amount: 100,
+        amount: tradeAmount,
+        percentage: tradePercentage,
         price: currentSignal.targetPrice,
         confidence: currentSignal.confidence,
         timestamp: new Date(),
@@ -757,7 +767,7 @@ function executeAITrade() {
     updateHistoryEnhanced();
     updatePortfolioStats();
     
-    updateStatus(elements.globalStatus, `✅ Trade executed: ${trade.type} ${trade.coin}`, 'success');
+    updateStatus(elements.globalStatus, `✅ Trade executed: ${trade.type} ${trade.coin} (${tradePercentage}% - $${tradeAmount.toFixed(0)})`, 'success');
     console.log('⚡ Trade executed:', trade);
     
     // Disable execute button until new signal
@@ -858,6 +868,26 @@ elements.btnClearHistory.addEventListener('click', clearTradeHistory);
 document.querySelectorAll('.coin-btn').forEach(btn => {
     btn.addEventListener('click', selectCoin);
 });
+
+// Trade percentage slider
+elements.tradePercentageSlider.addEventListener('input', (e) => {
+    tradePercentage = parseInt(e.target.value);
+    updateTradeAmount();
+});
+
+/**
+ * Update trade amount display
+ */
+function updateTradeAmount() {
+    const tradeAmount = (portfolio.totalValue * tradePercentage) / 100;
+    elements.tradePercentage.textContent = tradePercentage;
+    elements.tradeAmountUsd.textContent = `$${tradeAmount.toFixed(0)}`;
+    
+    // Update button text if signal exists
+    if (currentSignal) {
+        elements.btnExecute.textContent = `Execute ${currentSignal.signal} ${currentSignal.coin} (${tradePercentage}%)`;
+    }
+}
 
 // Override original generateSignal to use enhanced version
 elements.btnSignal.removeEventListener('click', generateSignal);
