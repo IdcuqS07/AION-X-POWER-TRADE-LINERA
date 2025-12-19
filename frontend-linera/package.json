@@ -1,0 +1,20 @@
+{
+  "name": "ai-power-trade-linera",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@linera/client": "^0.15.8",
+    "@linera/signer": "^0.15.6",
+    "ethers": "^6.16.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "vite-plugin-top-level-await": "^1.6.0",
+    "vite-plugin-wasm": "^3.5.0"
+  }
+}

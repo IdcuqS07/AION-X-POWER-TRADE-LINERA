@@ -1,0 +1,15 @@
+{
+  "ai_trading_app_id": "5ac79e62627dd2fb380176f93e701d91fe6fc01e5a25b56801ace1de13399c0d",
+  "deployed_at": "2025-12-19T10:20:09Z",
+  "network": "testnet-conway",
+  "features": [
+    "IncrementTrades",
+    "GenerateSignal",
+    "ExecuteTrade"
+  ],
+  "queries": [
+    "trade_count",
+    "signals",
+    "trades"
+  ]
+}

@@ -1,0 +1,112 @@
+================================================================================
+AI POWER TRADE - QUICK COMMANDS
+================================================================================
+
+CONTRACT DEPLOYMENT
+-------------------
+# Build contract
+cd linera-protocol/examples
+cargo build --release --target wasm32-unknown-unknown -p ai-trading
+
+# Deploy to testnet
+bash deploy-ai-trading.sh
+
+# Check deployed apps
+linera wallet show
+
+
+GRAPHQL SERVICE
+---------------
+# Start service
+bash start-graphql-service.sh
+
+# Stop service
+kill -9 $(lsof -t -i:8080)
+
+# View logs
+tail -f graphql-service.log
+
+# Test service
+curl http://localhost:8080/graphql
+
+
+CONTRACT TESTING
+----------------
+# Run all tests
+bash test-ai-trading.sh
+
+# Manual GraphQL query
+curl -X POST http://localhost:8080/graphql \
+  -H "Content-Type: application/json" \
+  -d '{"query":"query { applications { id } }"}'
+
+
+FRONTEND DEVELOPMENT
+--------------------
+# Install dependencies
+cd frontend-linera
+npm install
+
+# Development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Deploy to VPS
+bash deploy-production.sh
+
+
+VPS DEPLOYMENT
+--------------
+# Check VPS status
+bash check-vps-status.sh
+
+# Deploy frontend
+cd frontend-linera
+npm run build
+rsync -avz dist/ root@152.42.199.50:/var/www/html/
+
+# Check live site
+curl http://152.42.199.50/
+
+
+TROUBLESHOOTING
+---------------
+# Check wallet
+linera wallet show
+
+# Check chain status
+linera query-validators
+
+# View contract WASM
+ls -lh linera-protocol/examples/target/wasm32-unknown-unknown/release/*.wasm
+
+# Clean build
+cd linera-protocol/examples
+cargo clean
+cargo build --release --target wasm32-unknown-unknown -p ai-trading
+
+
+USEFUL PATHS
+------------
+Contract Source:    linera-protocol/examples/ai-trading/
+Contract WASM:      linera-protocol/examples/target/wasm32-unknown-unknown/release/
+Frontend Source:    frontend-linera/
+Frontend Build:     frontend-linera/dist/
+Application ID:     app_ids.json
+GraphQL Logs:       graphql-service.log
+
+
+APPLICATION ID
+--------------
+5ac79e62627dd2fb380176f93e701d91fe6fc01e5a25b56801ace1de13399c0d
+
+
+ENDPOINTS
+---------
+GraphQL:     http://localhost:8080/graphql
+Frontend:    http://152.42.199.50/
+Faucet:      https://faucet.testnet-conway.linera.net
+
+================================================================================

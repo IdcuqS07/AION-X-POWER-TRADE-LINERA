@@ -1,0 +1,48 @@
+# Referensi projects (jangan di-commit)
+frontend-linera/royalepoker/
+linera-protocol/
+linera-full/
+microcard/
+deadkeys/
+ai-signals/
+ai-trading-polygon/
+defi-trading/
+examples/
+master-chain/
+production/
+wallet/
+venv/
+
+# Build artifacts
+target/
+dist/
+node_modules/
+*.wasm
+Cargo.lock
+
+# Logs
+*.log
+app.log
+deploy.log
+frontend.log
+graphql.log
+linera.log
+service.log
+server.log
+graphql-service.log
+
+# Temporary files
+*.tar.gz
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Environment
+.env.local
+*.pem
+*.key
+
+# IDE
+.vscode/
+.idea/
