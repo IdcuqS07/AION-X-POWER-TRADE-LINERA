@@ -156,6 +156,40 @@
                             <div class="portfolio-value" id="total-trades">0</div>
                         </div>
                     </div>
+                    
+                    <!-- Testnet Faucet Section -->
+                    <div class="faucet-section" id="faucet-section">
+                        <div class="faucet-header">
+                            <span class="faucet-icon">💧</span>
+                            <div class="faucet-title">
+                                <h4>Testnet Faucet</h4>
+                                <p>Get free testnet tokens to start trading</p>
+                            </div>
+                        </div>
+                        <div class="faucet-info">
+                            <div class="faucet-detail">
+                                <span>Amount:</span>
+                                <span class="faucet-amount">100 LINERA</span>
+                            </div>
+                            <div class="faucet-detail">
+                                <span>Status:</span>
+                                <span class="faucet-status" id="faucet-status">
+                                    <span class="status-dot ready"></span>
+                                    <span id="faucet-status-text">Ready to claim</span>
+                                </span>
+                            </div>
+                            <div class="faucet-detail" id="faucet-cooldown-container" style="display: none;">
+                                <span>Next claim:</span>
+                                <span id="faucet-cooldown">--:--:--</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-faucet" id="btn-claim-faucet">
+                            <span class="btn-icon">💧</span>
+                            <span class="btn-text">Claim Test Tokens</span>
+                        </button>
+                        <div class="faucet-message" id="faucet-message" style="display: none;"></div>
+                    </div>
+                    
                     <button class="btn" id="btn-refresh-portfolio">Refresh Portfolio</button>
                 </div>
 

@@ -4,10 +4,12 @@
 
 import LineraManager from './linera-wasm.js';
 import TradingManager from './trading.js';
+import FaucetManager from './faucet.js';
 
 // Initialize managers
 const lineraManager = new LineraManager();
 const tradingManager = new TradingManager();
+const faucetManager = new FaucetManager();
 
 // DOM Elements
 const elements = {
@@ -85,7 +87,14 @@ const elements = {
     // Trade percentage
     tradePercentageSlider: document.getElementById('trade-percentage-slider'),
     tradePercentage: document.getElementById('trade-percentage'),
-    tradeAmountUsd: document.getElementById('trade-amount-usd')
+    tradeAmountUsd: document.getElementById('trade-amount-usd'),
+    // Faucet
+    btnClaimFaucet: document.getElementById('btn-claim-faucet'),
+    faucetStatus: document.getElementById('faucet-status'),
+    faucetStatusText: document.getElementById('faucet-status-text'),
+    faucetCooldown: document.getElementById('faucet-cooldown'),
+    faucetCooldownContainer: document.getElementById('faucet-cooldown-container'),
+    faucetMessage: document.getElementById('faucet-message')
 };
 
 // Store full values for copying
@@ -257,6 +266,9 @@ async function createWalletFromDropdown() {
         
         // Enable trading
         elements.btnSignal.disabled = false;
+        
+        // Update faucet status
+        updateFaucetStatus();
         
         // Update header button
         elements.btnConnectHeader.classList.add('connected');
@@ -476,6 +488,9 @@ async function initApp() {
                 updateStatus(elements.walletStatus, '✅ Wallet connected!', 'success');
                 updateStatus(elements.globalStatus, '✅ Ready to trade!', 'success');
                 elements.btnSignal.disabled = false;
+                
+                // Update faucet status
+                updateFaucetStatus();
                 
                 // Update header button
                 elements.btnConnectHeader.classList.add('connected');
@@ -874,6 +889,107 @@ elements.tradePercentageSlider.addEventListener('input', (e) => {
     tradePercentage = parseInt(e.target.value);
     updateTradeAmount();
 });
+
+/**
+ * Update faucet status
+ */
+function updateFaucetStatus() {
+    const info = lineraManager.getWalletInfo();
+    
+    if (!info.chainId) {
+        elements.btnClaimFaucet.disabled = true;
+        elements.faucetStatusText.textContent = 'Connect wallet first';
+        return;
+    }
+
+    const { canClaim, remainingTime } = faucetManager.canClaim(info.owner);
+    
+    if (canClaim) {
+        elements.btnClaimFaucet.disabled = false;
+        elements.faucetStatusText.textContent = 'Ready to claim';
+        elements.faucetStatus.querySelector('.status-dot').className = 'status-dot ready';
+        elements.faucetCooldownContainer.style.display = 'none';
+    } else {
+        elements.btnClaimFaucet.disabled = true;
+        elements.faucetStatusText.textContent = 'Cooldown active';
+        elements.faucetStatus.querySelector('.status-dot').className = 'status-dot cooldown';
+        elements.faucetCooldownContainer.style.display = 'flex';
+        elements.faucetCooldown.textContent = faucetManager.formatRemainingTime(remainingTime);
+        
+        // Update countdown every second
+        if (window.faucetCountdownInterval) {
+            clearInterval(window.faucetCountdownInterval);
+        }
+        
+        window.faucetCountdownInterval = setInterval(() => {
+            const { canClaim: nowCanClaim, remainingTime: nowRemaining } = faucetManager.canClaim(info.owner);
+            
+            if (nowCanClaim) {
+                updateFaucetStatus();
+                clearInterval(window.faucetCountdownInterval);
+            } else {
+                elements.faucetCooldown.textContent = faucetManager.formatRemainingTime(nowRemaining);
+            }
+        }, 1000);
+    }
+}
+
+/**
+ * Claim faucet tokens
+ */
+async function claimFaucetTokens() {
+    const info = lineraManager.getWalletInfo();
+    
+    if (!info.chainId) {
+        alert('Please connect wallet first');
+        return;
+    }
+
+    // Update UI to claiming state
+    elements.btnClaimFaucet.disabled = true;
+    elements.btnClaimFaucet.querySelector('.btn-text').textContent = 'Claiming...';
+    elements.faucetStatusText.textContent = 'Processing...';
+    elements.faucetStatus.querySelector('.status-dot').className = 'status-dot claiming';
+    elements.faucetMessage.style.display = 'none';
+
+    try {
+        const result = await faucetManager.claimTokens(info.owner, info.chainId);
+        
+        // Success!
+        elements.faucetMessage.textContent = result.message;
+        elements.faucetMessage.className = 'faucet-message success';
+        elements.faucetMessage.style.display = 'block';
+        
+        // Update status
+        updateFaucetStatus();
+        
+        // Hide message after 5 seconds
+        setTimeout(() => {
+            elements.faucetMessage.style.display = 'none';
+        }, 5000);
+        
+        console.log('✅ Faucet claim successful:', result);
+        
+    } catch (error) {
+        // Error
+        elements.faucetMessage.textContent = error.message;
+        elements.faucetMessage.className = 'faucet-message error';
+        elements.faucetMessage.style.display = 'block';
+        
+        elements.btnClaimFaucet.disabled = false;
+        elements.btnClaimFaucet.querySelector('.btn-text').textContent = 'Claim Test Tokens';
+        
+        console.error('❌ Faucet claim failed:', error);
+        
+        // Hide message after 5 seconds
+        setTimeout(() => {
+            elements.faucetMessage.style.display = 'none';
+        }, 5000);
+    }
+}
+
+// Faucet event listener
+elements.btnClaimFaucet.addEventListener('click', claimFaucetTokens);
 
 /**
  * Update trade amount display
