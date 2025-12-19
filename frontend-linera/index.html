@@ -339,6 +339,62 @@
                         </div>
                     </div>
 
+                    <!-- Stop Loss & Take Profit -->
+                    <div class="risk-management-section" id="risk-management" style="display: none;">
+                        <div class="risk-header">
+                            <h4>⚙️ Risk Management</h4>
+                            <span class="risk-ratio" id="risk-ratio">R:R 2:1</span>
+                        </div>
+                        
+                        <!-- Take Profit -->
+                        <div class="risk-control">
+                            <div class="risk-control-header">
+                                <label>🎯 Take Profit (Target)</label>
+                                <button class="btn-ai-suggest" id="btn-ai-tp">AI Suggest</button>
+                            </div>
+                            <div class="risk-input-group">
+                                <div class="risk-input">
+                                    <label>Price</label>
+                                    <input type="number" id="take-profit-price" placeholder="45000" step="0.01" />
+                                </div>
+                                <div class="risk-input">
+                                    <label>Percentage</label>
+                                    <div class="percentage-input">
+                                        <input type="number" id="take-profit-percent" placeholder="5" step="0.1" min="0" max="100" />
+                                        <span>%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="risk-info profit">
+                                Profit: +<span id="tp-profit">$0</span>
+                            </div>
+                        </div>
+
+                        <!-- Stop Loss -->
+                        <div class="risk-control">
+                            <div class="risk-control-header">
+                                <label>🛡️ Stop Loss</label>
+                                <button class="btn-ai-suggest" id="btn-ai-sl">AI Suggest</button>
+                            </div>
+                            <div class="risk-input-group">
+                                <div class="risk-input">
+                                    <label>Price</label>
+                                    <input type="number" id="stop-loss-price" placeholder="40000" step="0.01" />
+                                </div>
+                                <div class="risk-input">
+                                    <label>Percentage</label>
+                                    <div class="percentage-input">
+                                        <input type="number" id="stop-loss-percent" placeholder="3" step="0.1" min="0" max="100" />
+                                        <span>%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="risk-info loss">
+                                Loss: -<span id="sl-loss">$0</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="button-group">
                         <button class="btn" id="btn-signal">Generate New Signal</button>
                         <button class="btn btn-secondary" id="btn-execute" disabled>Execute AI Trade</button>

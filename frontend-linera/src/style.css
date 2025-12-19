@@ -1012,3 +1012,150 @@ body {
     border: 1px solid #00ccff;
     color: #00ccff;
 }
+
+/* Risk Management Section */
+.risk-management-section {
+    margin: 20px 0;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 255, 136, 0.2);
+}
+
+.risk-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.risk-header h4 {
+    margin: 0;
+    font-size: 16px;
+    color: #00ff88;
+}
+
+.risk-ratio {
+    padding: 4px 12px;
+    background: rgba(0, 255, 136, 0.1);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #00ff88;
+}
+
+.risk-control {
+    margin: 15px 0;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+}
+
+.risk-control-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.risk-control-header label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.btn-ai-suggest {
+    padding: 4px 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 4px;
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-ai-suggest:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.risk-input-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 10px 0;
+}
+
+.risk-input {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.risk-input label {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.risk-input input {
+    padding: 8px 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    color: white;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+}
+
+.risk-input input:focus {
+    outline: none;
+    border-color: #00ff88;
+    box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.1);
+}
+
+.percentage-input {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.percentage-input input {
+    flex: 1;
+    padding-right: 25px;
+}
+
+.percentage-input span {
+    position: absolute;
+    right: 10px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 12px;
+    pointer-events: none;
+}
+
+.risk-info {
+    margin-top: 8px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.risk-info.profit {
+    background: rgba(0, 255, 136, 0.1);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    color: #00ff88;
+}
+
+.risk-info.loss {
+    background: rgba(255, 68, 68, 0.1);
+    border: 1px solid rgba(255, 68, 68, 0.3);
+    color: #ff4444;
+}

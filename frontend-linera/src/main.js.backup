@@ -1241,15 +1241,13 @@ function updateProfitLossDisplay() {
 
 // ============================================
 // Risk Management Integration
-
-
-// ============================================
-// Risk Management Integration - Override Functions
 // ============================================
 
-// Override generateSignalEnhanced with risk management
-const _originalGenerateSignal = generateSignalEnhanced;
-generateSignalEnhanced = function() {
+// Store original generateSignalEnhanced
+const originalGenerateSignalEnhanced = generateSignalEnhanced;
+
+// Override with risk management integration
+function generateSignalEnhanced() {
     const info = lineraManager.getWalletInfo();
     
     if (!info.chainId) {
@@ -1324,11 +1322,13 @@ generateSignalEnhanced = function() {
     updateStatus(elements.globalStatus, `✅ AI Signal: ${signal} ${selectedCoin} | TP: +${aiSuggestion.takeProfitPercent}% | SL: -${aiSuggestion.stopLossPercent}%`, 'success');
     console.log('🧠 Signal generated:', currentSignal);
     console.log('🎯 Risk Management:', aiSuggestion);
-};
+}
 
-// Override executeAITrade with risk management
-const _originalExecuteTrade = executeAITrade;
-executeAITrade = function() {
+// Store original executeAITrade
+const originalExecuteAITrade = executeAITrade;
+
+// Override with risk management integration
+function executeAITrade() {
     if (!currentSignal) {
         alert('Please generate a signal first');
         return;
@@ -1428,6 +1428,13 @@ executeAITrade = function() {
     
     // Hide risk management section
     elements.riskManagement.style.display = 'none';
-};
+}
+
+// Re-bind event listeners with new functions
+elements.btnSignal.removeEventListener('click', originalGenerateSignalEnhanced);
+elements.btnSignal.addEventListener('click', generateSignalEnhanced);
+
+elements.btnExecute.removeEventListener('click', originalExecuteAITrade);
+elements.btnExecute.addEventListener('click', executeAITrade);
 
 console.log('✅ Risk Management Integration loaded');
