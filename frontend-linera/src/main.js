@@ -331,6 +331,9 @@ async function createWalletFromDropdown() {
         // Update faucet status
         updateFaucetStatus();
         
+        // Update portfolio with initial balance
+        await updatePortfolioStats();
+        
         // Update header button
         elements.btnConnectHeader.classList.add('connected');
         elements.walletButtonText.textContent = walletInfo.chainId.substring(0, 8) + '...';
