@@ -874,7 +874,7 @@ async function updatePortfolioStats() {
     portfolio.winRate = portfolio.totalTrades > 0 ? 
         Math.round((winningTrades / portfolio.totalTrades) * 100) : 0;
     
-    elements.totalValue.textContent = `$${portfolio.totalValue.toFixed(2)}`;
+    // Update UI
     elements.totalValue.textContent = `$${portfolio.totalValue.toFixed(0)}`;
     elements.pnl.textContent = `${portfolio.pnl >= 0 ? '+' : ''}$${portfolio.pnl.toFixed(0)}`;
     elements.pnl.style.color = portfolio.pnl >= 0 ? '#00ff88' : '#ff4444';
