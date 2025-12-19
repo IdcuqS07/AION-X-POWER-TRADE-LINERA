@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI POWER TRADE - Linera Edition</title>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { 
+            text-align: center; 
+            margin-bottom: 30px;
+            background: rgba(255,255,255,0.05);
+            padding: 25px;
+            border-radius: 15px;
+        }
+        .header h1 { 
+            font-size: 2.5em; 
+            background: linear-gradient(45deg, #00ff88, #00ccff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
+        .card { 
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(0,255,136,0.3);
+            border-radius: 15px;
+            padding: 20px;
+        }
+        .card h3 { 
+            color: #00ff88; 
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        .status { 
+            padding: 12px; 
+            margin: 12px 0; 
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+        .success { background: linear-gradient(45deg, #004d00, #006600); border: 1px solid #00ff88; }
+        .error { background: linear-gradient(45deg, #4d0000, #660000); border: 1px solid #ff4444; }
+        .info { background: linear-gradient(45deg, #003d4d, #004d66); border: 1px solid #0088ff; }
+        .warning { background: linear-gradient(45deg, #4d3d00, #665200); border: 1px solid #ffaa00; }
+        .wallet-info { 
+            background: rgba(0,255,136,0.1);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 12px 0;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+        .wallet-info div { margin: 5px 0; }
+        .wallet-info strong { color: #00ff88; }
+        .btn { 
+            background: linear-gradient(45deg, #00ff88, #00cc66);
+            color: #000; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            margin: 6px 4px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+        .btn:hover { transform: scale(1.05); transition: 0.2s; }
+        .btn:disabled { background: #666; cursor: not-allowed; opacity: 0.5; }
+        .btn-secondary { background: linear-gradient(45deg, #0088ff, #0066cc); }
+        .btn-danger { background: linear-gradient(45deg, #ff4444, #cc0000); }
+        .signal { 
+            background: rgba(0,136,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 3px solid #0088ff;
+        }
+        .signal-buy { border-left-color: #00ff88; background: rgba(0,255,136,0.1); }
+        .signal-sell { border-left-color: #ff4444; background: rgba(255,68,68,0.1); }
+        .loading { 
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #00ff88;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 AI POWER TRADE</h1>
+            <p>Powered by Linera Blockchain</p>
+            <div id="global-status" class="status info">Initializing Linera...</div>
+        </div>
+
+        <div class="grid">
+            <!-- Linera Wallet Card -->
+            <div class="card">
+                <h3>⛓️ Linera Wallet</h3>
+                <div id="wallet-status" class="status info">Ready to connect...</div>
+                
+                <div class="wallet-info" id="wallet-info" style="display: none;">
+                    <div><strong>Chain ID:</strong> <span id="chain-id">-</span></div>
+                    <div><strong>Owner:</strong> <span id="owner">-</span></div>
+                    <div><strong>Status:</strong> <span id="wallet-state">-</span></div>
+                </div>
+
+                <button class="btn" onclick="createWallet()" id="btn-create">Create Wallet</button>
+                <button class="btn btn-secondary" onclick="getWalletInfo()" id="btn-info">Wallet Info</button>
+                <button class="btn btn-danger" onclick="resetWallet()">Reset</button>
+            </div>
+
+            <!-- AI Trading Signals Card -->
+            <div class="card">
+                <h3>🤖 AI Trading Signals</h3>
+                <div id="signals-container">
+                    <div class="status info">Connect wallet to see AI signals</div>
+                </div>
+                <button class="btn" onclick="generateSignal()" id="btn-signal" disabled>Generate Signal</button>
+            </div>
+
+            <!-- Trading History Card -->
+            <div class="card">
+                <h3>📊 Trading History</h3>
+                <div id="history-container">
+                    <div class="status info">No trades yet</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import Linera client from jsdelivr (more stable than unpkg)
+        import * as linera from 'https://cdn.jsdelivr.net/npm/@linera/client@0.15.6/+esm';
+        import { PrivateKey } from 'https://cdn.jsdelivr.net/npm/@linera/signer@0.15.6/+esm';
+        
+        // Make available globally
+        window.linera = linera;
+        window.LineraPrivateKey = PrivateKey;
+        
+        console.log('✅ Linera modules loaded from jsdelivr');
+        
+        // Global state
+        window.lineraState = {
+            client: null,
+            wallet: null,
+            chainId: null,
+            signer: null,
+            application: null,
+            initialized: false,
+            config: {
+                faucetUrl: 'https://faucet.devnet.linera.io',
+                applicationId: null, // Will be set from env or config
+            }
+        };
+
+        // Initialize Linera WASM
+        async function initLinera() {
+            try {
+                updateGlobalStatus('🔄 Initializing Linera WASM...', 'info');
+                
+                await linera.default();
+                
+                window.lineraState.initialized = true;
+                updateGlobalStatus('✅ Linera WASM Ready', 'success');
+                
+                // Check for existing wallet
+                const savedMnemonic = localStorage.getItem('linera_mnemonic');
+                if (savedMnemonic) {
+                    updateWalletStatus('🔄 Restoring wallet...', 'info');
+                    await restoreWallet(savedMnemonic);
+                } else {
+                    updateGlobalStatus('💡 Create a new wallet to start trading', 'info');
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('❌ Linera initialization failed:', error);
+                updateGlobalStatus('❌ Failed to initialize: ' + error.message, 'error');
+                return false;
+            }
+        }
+
+        // Create new wallet
+        window.createWallet = async function() {
+            try {
+                if (!window.lineraState.initialized) {
+                    await initLinera();
+                }
+                
+                updateWalletStatus('🔐 Creating wallet...', 'info');
+                document.getElementById('btn-create').disabled = true;
+                
+                // Generate mnemonic (simplified for demo)
+                const mnemonic = generateMnemonic();
+                localStorage.setItem('linera_mnemonic', mnemonic);
+                
+                // Create signer from mnemonic
+                const signer = PrivateKey.fromMnemonic(mnemonic);
+                const owner = signer.address();
+                
+                updateWalletStatus('⛓️ Claiming chain from faucet...', 'info');
+                
+                // Create wallet via faucet
+                const faucet = new linera.Faucet(window.lineraState.config.faucetUrl);
+                const wallet = await faucet.createWallet();
+                const chainId = await faucet.claimChain(wallet, owner);
+                
+                // Store state
+                window.lineraState.wallet = wallet;
+                window.lineraState.signer = signer;
+                window.lineraState.chainId = chainId;
+                localStorage.setItem('linera_chain_id', chainId);
+                
+                updateWalletStatus('🔧 Creating client...', 'info');
+                
+                // Create client
+                const client = await new linera.Client(wallet, signer, false);
+                window.lineraState.client = client;
+                
+                // Display wallet info
+                displayWalletInfo();
+                updateWalletStatus('✅ Wallet created successfully!', 'success');
+                updateGlobalStatus('✅ Ready to trade!', 'success');
+                
+                // Enable trading buttons
+                document.getElementById('btn-signal').disabled = false;
+                document.getElementById('btn-create').disabled = false;
+                
+            } catch (error) {
+                console.error('❌ Wallet creation failed:', error);
+                updateWalletStatus('❌ Error: ' + error.message, 'error');
+                document.getElementById('btn-create').disabled = false;
+            }
+        };
+
+        // Restore existing wallet
+        async function restoreWallet(mnemonic) {
+            try {
+                const signer = PrivateKey.fromMnemonic(mnemonic);
+                const chainId = localStorage.getItem('linera_chain_id');
+                
+                if (chainId) {
+                    window.lineraState.signer = signer;
+                    window.lineraState.chainId = chainId;
+                    
+                    displayWalletInfo();
+                    updateWalletStatus('✅ Wallet restored', 'success');
+                    updateGlobalStatus('✅ Ready to trade!', 'success');
+                    
+                    document.getElementById('btn-signal').disabled = false;
+                }
+            } catch (error) {
+                console.error('❌ Wallet restore failed:', error);
+                localStorage.removeItem('linera_mnemonic');
+                localStorage.removeItem('linera_chain_id');
+            }
+        }
+
+        // Display wallet info
+        function displayWalletInfo() {
+            const state = window.lineraState;
+            if (!state.chainId) return;
+            
+            document.getElementById('chain-id').textContent = state.chainId.substring(0, 16) + '...';
+            document.getElementById('owner').textContent = state.signer ? state.signer.address().substring(0, 16) + '...' : '-';
+            document.getElementById('wallet-state').textContent = state.client ? 'Connected' : 'Created';
+            document.getElementById('wallet-info').style.display = 'block';
+        }
+
+        // Get wallet info
+        window.getWalletInfo = function() {
+            const state = window.lineraState;
+            if (!state.chainId) {
+                updateWalletStatus('❌ No wallet found', 'error');
+                return;
+            }
+            
+            console.log('Wallet Info:', {
+                chainId: state.chainId,
+                owner: state.signer ? state.signer.address() : null,
+                hasClient: !!state.client,
+                hasWallet: !!state.wallet
+            });
+            
+            displayWalletInfo();
+            updateWalletStatus('✅ Wallet info displayed', 'success');
+        };
+
+        // Reset wallet
+        window.resetWallet = function() {
+            if (confirm('Are you sure? This will delete your wallet!')) {
+                localStorage.clear();
+                window.location.reload();
+            }
+        };
+
+        // Generate AI trading signal
+        window.generateSignal = function() {
+            const signals = [
+                { type: 'BUY', pair: 'BTC/USD', price: 42500, confidence: 0.85, reason: 'Strong uptrend detected' },
+                { type: 'SELL', pair: 'ETH/USD', price: 2250, confidence: 0.78, reason: 'Resistance level reached' },
+                { type: 'BUY', pair: 'SOL/USD', price: 98, confidence: 0.92, reason: 'Breakout pattern forming' },
+            ];
+            
+            const signal = signals[Math.floor(Math.random() * signals.length)];
+            
+            const container = document.getElementById('signals-container');
+            const signalEl = document.createElement('div');
+            signalEl.className = 'signal signal-' + signal.type.toLowerCase();
+            signalEl.innerHTML = `
+                <strong>${signal.type} ${signal.pair}</strong><br>
+                Price: $${signal.price.toLocaleString()}<br>
+                Confidence: ${(signal.confidence * 100).toFixed(0)}%<br>
+                <small>${signal.reason}</small>
+            `;
+            
+            container.innerHTML = '';
+            container.appendChild(signalEl);
+            
+            // Add to history
+            addToHistory(signal);
+        };
+
+        // Add to trading history
+        function addToHistory(signal) {
+            const container = document.getElementById('history-container');
+            const historyEl = document.createElement('div');
+            historyEl.className = 'signal signal-' + signal.type.toLowerCase();
+            historyEl.innerHTML = `
+                <small>${new Date().toLocaleTimeString()}</small><br>
+                <strong>${signal.type} ${signal.pair}</strong> @ $${signal.price.toLocaleString()}
+            `;
+            
+            if (container.querySelector('.status')) {
+                container.innerHTML = '';
+            }
+            
+            container.insertBefore(historyEl, container.firstChild);
+            
+            // Keep only last 5
+            while (container.children.length > 5) {
+                container.removeChild(container.lastChild);
+            }
+        }
+
+        // Helper: Generate mnemonic
+        function generateMnemonic() {
+            const words = ['abandon', 'ability', 'able', 'about', 'above', 'absent', 'absorb', 'abstract', 
+                          'absurd', 'abuse', 'access', 'accident', 'account', 'accuse', 'achieve', 'acid'];
+            return Array.from({length: 12}, () => words[Math.floor(Math.random() * words.length)]).join(' ');
+        }
+
+        // Helper: Update status
+        function updateGlobalStatus(message, type) {
+            const el = document.getElementById('global-status');
+            el.textContent = message;
+            el.className = 'status ' + type;
+        }
+
+        function updateWalletStatus(message, type) {
+            const el = document.getElementById('wallet-status');
+            el.textContent = message;
+            el.className = 'status ' + type;
+        }
+
+        // Auto-initialize on load
+        window.addEventListener('load', () => {
+            initLinera();
+        });
+    </script>
+</body>
+</html>

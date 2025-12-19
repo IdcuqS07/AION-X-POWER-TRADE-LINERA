@@ -1,0 +1,105 @@
+# 🚀 DEPLOY LINERA FRONTEND SEKARANG
+
+## Jalankan command ini satu per satu di terminal lokal:
+
+# 1. Upload file baru
+scp AI-POWER-TRADE-LINERA.html root@152.42.199.50:/opt/ai-power-trade/
+
+# 2. SSH ke VPS
+ssh root@152.42.199.50
+
+## Setelah masuk VPS, jalankan ini:
+
+# 3. Masuk ke folder
+cd /opt/ai-power-trade
+
+# 4. Cek Node.js (install jika belum ada)
+node --version || (curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y nodejs)
+
+# 5. Buat server dengan CORS headers
+cat > linera-server.js << 'EOF'
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+
+const PORT = 3000;
+const server = http.createServer((req, res) => {
+    console.log(req.method, req.url);
+    
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    let filePath = (req.url === '/' || req.url === '/index.html') ? './AI-POWER-TRADE-LINERA.html' : '.' + req.url;
+    const ext = path.extname(filePath);
+    const mimeTypes = {'.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css'};
+    
+    fs.readFile(filePath, (err, content) => {
+        if (err) {
+            res.writeHead(404);
+            res.end('404 Not Found');
+        } else {
+            res.writeHead(200, {'Content-Type': mimeTypes[ext] || 'text/html'});
+            res.end(content);
+        }
+    });
+});
+
+server.listen(PORT, '0.0.0.0', () => console.log('Server on :3000'));
+EOF
+
+# 6. Stop server lama
+pkill -f "node linera-server.js" || true
+pkill -f "python3 -m http.server" || true
+
+# 7. Start server baru
+nohup node linera-server.js > /var/log/linera-frontend.log 2>&1 &
+
+# 8. Tunggu 2 detik
+sleep 2
+
+# 9. Test server
+curl -I http://localhost:3000
+
+# 10. Update Nginx
+cat > /etc/nginx/sites-available/default << 'EOF'
+server {
+    listen 80 default_server;
+    server_name _;
+    
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+        proxy_pass_header Cross-Origin-Opener-Policy;
+        proxy_pass_header Cross-Origin-Embedder-Policy;
+    }
+    
+    location /graphql {
+        proxy_pass http://localhost:8080;
+        add_header Access-Control-Allow-Origin * always;
+    }
+}
+EOF
+
+# 11. Reload Nginx
+nginx -t && systemctl reload nginx
+
+# 12. Check status
+echo "=== SERVICES ==="
+ps aux | grep -E "node|nginx" | grep -v grep
+echo ""
+echo "=== TEST ==="
+curl -I http://localhost:3000 | grep -E "Cross-Origin|HTTP"
+
+# 13. Exit VPS
+exit
+
+## Setelah keluar dari VPS, test dari browser:
+
+# Buka: http://152.42.199.50/
+# Tekan F12 (console)
+# Klik "Create Wallet"
+# Lihat logs
+
+## Monitor logs (optional):
+ssh root@152.42.199.50 "tail -f /var/log/linera-frontend.log"

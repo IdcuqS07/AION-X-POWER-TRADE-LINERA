@@ -1,0 +1,87 @@
+# 🔧 MANUAL FIX - Copy paste satu per satu
+
+## 1. Upload file baru
+scp AI-POWER-TRADE-LINERA.html root@152.42.199.50:/opt/ai-power-trade/
+
+## 2. SSH ke VPS
+ssh root@152.42.199.50
+
+## 3. Masuk folder dan cek file
+cd /opt/ai-power-trade
+ls -lh *.html
+
+## 4. Kill semua server yang running
+pkill -f node || true
+pkill -f python3 || true
+
+## 5. Buat server baru yang PASTI serve file baru
+cat > serve-linera.js << 'EOF'
+const http = require('http');
+const fs = require('fs');
+
+http.createServer((req, res) => {
+    console.log('Request:', req.url);
+    
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    fs.readFile('./AI-POWER-TRADE-LINERA.html', (err, data) => {
+        if (err) {
+            res.writeHead(500);
+            res.end('Error loading file');
+        } else {
+            res.writeHead(200, {'Content-Type': 'text/html'});
+            res.end(data);
+        }
+    });
+}).listen(3000, '0.0.0.0', () => {
+    console.log('Server running on port 3000');
+});
+EOF
+
+## 6. Start server
+nohup node serve-linera.js > /var/log/linera.log 2>&1 &
+
+## 7. Tunggu 2 detik
+sleep 2
+
+## 8. Cek apakah server running
+ps aux | grep node
+
+## 9. Test server (harus muncul HTML content)
+curl http://localhost:3000 | head -30
+
+## 10. Update Nginx
+cat > /etc/nginx/sites-available/default << 'EOF'
+server {
+    listen 80 default_server;
+    server_name _;
+    
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+    }
+}
+EOF
+
+## 11. Reload Nginx
+nginx -t
+systemctl reload nginx
+
+## 12. Test dari VPS
+curl -I http://localhost
+
+## 13. Exit
+exit
+
+## 14. Test dari browser
+# Buka: http://152.42.199.50/
+# HARD REFRESH: Ctrl+Shift+R (Windows/Linux) atau Cmd+Shift+R (Mac)
+# Buka Console (F12)
+# Harus lihat: "✅ Linera modules loaded"
+# BUKAN: "localhost:8082/graphql"
+
+## 15. Jika masih error, clear browser cache:
+# Chrome: Settings > Privacy > Clear browsing data > Cached images and files
+# Firefox: Settings > Privacy > Clear Data > Cached Web Content

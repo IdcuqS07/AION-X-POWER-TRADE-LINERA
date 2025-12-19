@@ -1,0 +1,8 @@
+[package]
+name = "ai-trading-abi"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { workspace = true }
+linera-sdk = { workspace = true }

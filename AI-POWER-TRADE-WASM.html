@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI POWER TRADE - Linera WASM Edition</title>
+    
+    <!-- Load Linera Web Client from unpkg -->
+    <script type="module">
+        // Import Linera client library
+        import * as lineraClient from 'https://unpkg.com/@linera/client@0.15.6/dist/index.js';
+        import { PrivateKey } from 'https://unpkg.com/@linera/signer@0.15.6/dist/index.js';
+        
+        // Make available globally
+        window.lineraClient = lineraClient;
+        window.LineraPrivateKey = PrivateKey;
+        
+        console.log('✅ Linera client loaded:', lineraClient);
+        
+        // Trigger initialization after library loaded
+        window.dispatchEvent(new Event('linera-loaded'));
+    </script>
+    
+    <!-- Linera WASM Client Wrapper -->
+    <script src="linera-wasm-client.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { 
+            text-align: center; 
+            margin-bottom: 40px;
+            background: rgba(255,255,255,0.05);
+            padding: 30px;
+            border-radius: 15px;
+        }
+        .header h1 { 
+            font-size: 2.5em; 
+            background: linear-gradient(45deg, #00ff88, #00ccff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .card { 
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(0,255,136,0.3);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        .btn { 
+            background: linear-gradient(45deg, #00ff88, #00cc66);
+            color: #000; 
+            border: none; 
+            padding: 12px 24px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            margin: 8px;
+            font-weight: 600;
+        }
+        .btn:hover { transform: scale(1.05); }
+        .btn:disabled { background: #666; cursor: not-allowed; }
+        .status { 
+            padding: 15px; 
+            margin: 15px 0; 
+            border-radius: 10px;
+            font-weight: 500;
+        }
+        .success { background: linear-gradient(45deg, #004d00, #006600); border: 1px solid #00ff88; }
+        .error { background: linear-gradient(45deg, #4d0000, #660000); border: 1px solid #ff4444; }
+        .info { background: linear-gradient(45deg, #003d4d, #004d66); border: 1px solid #0088ff; }
+        .wallet-info { 
+            background: rgba(0,255,136,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 AI POWER TRADE</h1>
+            <p>Linera WASM Integration Demo</p>
+        </div>
+
+        <div class="card">
+            <h3>⛓️ Linera Wallet</h3>
+            <div id="status" class="status info">Ready to connect...</div>
+            
+            <div class="wallet-info" id="wallet-info" style="display: none;">
+                <div><strong>Chain ID:</strong> <span id="chain-id">-</span></div>
+                <div><strong>Owner:</strong> <span id="owner">-</span></div>
+                <div><strong>Status:</strong> <span id="wallet-status">-</span></div>
+            </div>
+
+            <button class="btn" onclick="initializeWallet()">Initialize Wallet</button>
+            <button class="btn" onclick="claimNewChain()">Claim New Chain</button>
+            <button class="btn" onclick="getWalletInfo()">Get Wallet Info</button>
+            <button class="btn" onclick="resetWallet()">Reset Wallet</button>
+        </div>
+
+        <div class="card">
+            <h3>🤖 AI Trading (Coming Soon)</h3>
+            <p>Once wallet is initialized, AI trading features will be available here.</p>
+        </div>
+    </div>
+
+    <script>
+        // Global Linera client instance
+        let lineraClient = null;
+
+        // Update status message
+        function updateStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+
+        // Initialize Linera wallet
+        async function initializeWallet() {
+            try {
+                updateStatus('🔄 Initializing Linera WASM...', 'info');
+                
+                // Check if Linera WASM is loaded
+                if (typeof window.linera === 'undefined') {
+                    updateStatus('❌ Linera WASM not loaded. Using fallback GraphQL mode.', 'error');
+                    // Fallback to GraphQL-only mode
+                    await initializeGraphQLMode();
+                    return;
+                }
+
+                // Create client instance
+                lineraClient = new LineraWasmClient();
+                
+                // Initialize WASM
+                await lineraClient.init();
+                
+                // Create wallet
+                const walletInfo = await lineraClient.createWallet();
+                updateStatus('✅ Wallet created successfully!', 'success');
+                
+                // Claim chain
+                updateStatus('⛓️ Claiming chain from faucet...', 'info');
+                const chainId = await lineraClient.claimChain();
+                
+                // Create client
+                await lineraClient.createClient();
+                
+                // Show wallet info
+                displayWalletInfo();
+                
+                updateStatus(`✅ Wallet ready! Chain: ${chainId.substring(0, 8)}...`, 'success');
+                
+            } catch (error) {
+                console.error('Initialization error:', error);
+                updateStatus(`❌ Error: ${error.message}`, 'error');
+                
+                // Fallback to GraphQL mode
+                updateStatus('🔄 Falling back to GraphQL mode...', 'info');
+                await initializeGraphQLMode();
+            }
+        }
+
+        // Fallback: Initialize GraphQL-only mode
+        async function initializeGraphQLMode() {
+            try {
+                // Use GraphQL endpoint directly
+                const response = await fetch('http://152.42.199.50/graphql', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: 'query { chains { list } }'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const chainId = data.data?.chains?.list?.[0] || 'demo-chain';
+                    
+                    // Generate unique owner ID for this user
+                    const ownerId = 'user_' + Math.random().toString(36).substr(2, 16);
+                    
+                    // Store in localStorage
+                    localStorage.setItem('linera_chain_id', chainId);
+                    localStorage.setItem('linera_owner', ownerId);
+                    localStorage.setItem('linera_mode', 'graphql');
+                    
+                    document.getElementById('chain-id').textContent = chainId.substring(0, 16) + '...';
+                    document.getElementById('owner').textContent = ownerId.substring(0, 16) + '...';
+                    document.getElementById('wallet-status').textContent = 'Connected (GraphQL)';
+                    document.getElementById('wallet-info').style.display = 'block';
+                    
+                    updateStatus('✅ Wallet auto-created via GraphQL', 'success');
+                } else {
+                    throw new Error('GraphQL endpoint not available');
+                }
+            } catch (error) {
+                updateStatus('⚠️ Using simulation mode', 'info');
+                // Use simulation mode with unique user ID
+                const demoChainId = '42f7e939d331b7cb8343436fda0f4a0d0a9cc34622adbd0b5cf9f240c2120eed';
+                const demoOwnerId = 'demo_' + Math.random().toString(36).substr(2, 16);
+                
+                localStorage.setItem('linera_chain_id', demoChainId);
+                localStorage.setItem('linera_owner', demoOwnerId);
+                localStorage.setItem('linera_mode', 'simulation');
+                
+                document.getElementById('chain-id').textContent = demoChainId.substring(0, 16) + '...';
+                document.getElementById('owner').textContent = demoOwnerId.substring(0, 16) + '...';
+                document.getElementById('wallet-status').textContent = 'Demo';
+                document.getElementById('wallet-info').style.display = 'block';
+                
+                updateStatus('✅ Wallet auto-created (simulation)', 'success');
+            }
+        }
+
+        // Claim new chain
+        async function claimNewChain() {
+            if (!lineraClient) {
+                updateStatus('❌ Please initialize wallet first', 'error');
+                return;
+            }
+            
+            try {
+                updateStatus('⛓️ Claiming new chain...', 'info');
+                const chainId = await lineraClient.claimChain();
+                displayWalletInfo();
+                updateStatus(`✅ New chain claimed: ${chainId.substring(0, 8)}...`, 'success');
+            } catch (error) {
+                updateStatus(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Display wallet info
+        function displayWalletInfo() {
+            if (!lineraClient) return;
+            
+            const info = lineraClient.getWalletInfo();
+            document.getElementById('chain-id').textContent = info.chainId ? info.chainId.substring(0, 16) + '...' : '-';
+            document.getElementById('owner').textContent = info.owner ? info.owner.substring(0, 16) + '...' : '-';
+            document.getElementById('wallet-status').textContent = info.hasClient ? 'Connected' : 'Wallet Created';
+            document.getElementById('wallet-info').style.display = 'block';
+        }
+
+        // Get wallet info
+        function getWalletInfo() {
+            if (!lineraClient) {
+                updateStatus('❌ Wallet not initialized', 'error');
+                return;
+            }
+            
+            const info = lineraClient.getWalletInfo();
+            console.log('Wallet Info:', info);
+            displayWalletInfo();
+            updateStatus('✅ Wallet info displayed', 'success');
+        }
+
+        // Reset wallet
+        function resetWallet() {
+            if (lineraClient) {
+                lineraClient.reset();
+            }
+            localStorage.clear();
+            document.getElementById('wallet-info').style.display = 'none';
+            updateStatus('🔄 Wallet reset. Refresh page to start over.', 'info');
+        }
+
+        // Auto-initialize on page load
+        window.addEventListener('load', async () => {
+            const savedChainId = localStorage.getItem('linera_chain_id');
+            
+            if (savedChainId) {
+                // Restore existing wallet
+                document.getElementById('chain-id').textContent = savedChainId.substring(0, 16) + '...';
+                document.getElementById('owner').textContent = localStorage.getItem('linera_owner')?.substring(0, 16) + '...' || 'Restored';
+                document.getElementById('wallet-status').textContent = 'Restored';
+                document.getElementById('wallet-info').style.display = 'block';
+                updateStatus('✅ Wallet restored from storage', 'success');
+            } else {
+                // Auto-create wallet for new user
+                updateStatus('🔄 Auto-creating wallet for new user...', 'info');
+                await initializeWallet();
+            }
+        });
+    </script>
+</body>
+</html>

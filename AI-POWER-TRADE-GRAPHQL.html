@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI POWER TRADE - Linera GraphQL</title>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { 
+            text-align: center; 
+            margin-bottom: 30px;
+            background: rgba(255,255,255,0.05);
+            padding: 25px;
+            border-radius: 15px;
+        }
+        .header h1 { 
+            font-size: 2.5em; 
+            background: linear-gradient(45deg, #00ff88, #00ccff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
+        .card { 
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(0,255,136,0.3);
+            border-radius: 15px;
+            padding: 20px;
+        }
+        .card h3 { 
+            color: #00ff88; 
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        .status { 
+            padding: 12px; 
+            margin: 12px 0; 
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+        .success { background: linear-gradient(45deg, #004d00, #006600); border: 1px solid #00ff88; }
+        .error { background: linear-gradient(45deg, #4d0000, #660000); border: 1px solid #ff4444; }
+        .info { background: linear-gradient(45deg, #003d4d, #004d66); border: 1px solid #0088ff; }
+        .warning { background: linear-gradient(45deg, #4d3d00, #665200); border: 1px solid #ffaa00; }
+        .wallet-info { 
+            background: rgba(0,255,136,0.1);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 12px 0;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+        .wallet-info div { margin: 5px 0; word-break: break-all; }
+        .wallet-info strong { color: #00ff88; }
+        .btn { 
+            background: linear-gradient(45deg, #00ff88, #00cc66);
+            color: #000; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            margin: 6px 4px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+        .btn:hover { transform: scale(1.05); transition: 0.2s; }
+        .btn:disabled { background: #666; cursor: not-allowed; opacity: 0.5; }
+        .btn-secondary { background: linear-gradient(45deg, #0088ff, #0066cc); }
+        .btn-danger { background: linear-gradient(45deg, #ff4444, #cc0000); }
+        .signal { 
+            background: rgba(0,136,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 3px solid #0088ff;
+        }
+        .signal-buy { border-left-color: #00ff88; background: rgba(0,255,136,0.1); }
+        .signal-sell { border-left-color: #ff4444; background: rgba(255,68,68,0.1); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 AI POWER TRADE</h1>
+            <p>Powered by Linera Blockchain (GraphQL Mode)</p>
+            <div id="global-status" class="status info">Initializing...</div>
+        </div>
+
+        <div class="grid">
+            <!-- Linera Wallet Card -->
+            <div class="card">
+                <h3>⛓️ Linera Wallet</h3>
+                <div id="wallet-status" class="status info">Ready to create wallet...</div>
+                
+                <div class="wallet-info" id="wallet-info" style="display: none;">
+                    <div><strong>Chain ID:</strong> <span id="chain-id">-</span></div>
+                    <div><strong>Owner:</strong> <span id="owner">-</span></div>
+                    <div><strong>Mode:</strong> <span id="mode">GraphQL + Demo</span></div>
+                    <div><strong>Validator:</strong> <span id="validator">152.42.199.50:19100</span></div>
+                </div>
+
+                <button class="btn" onclick="createWallet()" id="btn-create">Create Wallet</button>
+                <button class="btn btn-secondary" onclick="testGraphQL()">Test GraphQL</button>
+                <button class="btn btn-danger" onclick="resetWallet()">Reset</button>
+            </div>
+
+            <!-- AI Trading Signals Card -->
+            <div class="card">
+                <h3>🤖 AI Trading Signals</h3>
+                <div id="signals-container">
+                    <div class="status info">Create wallet to see AI signals</div>
+                </div>
+                <button class="btn" onclick="generateSignal()" id="btn-signal" disabled>Generate Signal</button>
+            </div>
+
+            <!-- Trading History Card -->
+            <div class="card">
+                <h3>📊 Trading History</h3>
+                <div id="history-container">
+                    <div class="status info">No trades yet</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            graphqlUrl: 'http://152.42.199.50/graphql',
+            validatorUrl: 'http://152.42.199.50:19100',
+            faucetUrl: 'https://faucet.devnet.linera.io'
+        };
+
+        // Global state
+        let wallet = {
+            chainId: null,
+            owner: null,
+            created: false
+        };
+
+        // Initialize
+        window.addEventListener('load', async () => {
+            // Check for existing wallet
+            const saved = localStorage.getItem('linera_wallet');
+            if (saved) {
+                try {
+                    wallet = JSON.parse(saved);
+                    displayWallet();
+                    updateGlobalStatus('✅ Wallet restored', 'success');
+                    document.getElementById('btn-signal').disabled = false;
+                } catch (e) {
+                    updateGlobalStatus('💡 Create a new wallet to start', 'info');
+                }
+            } else {
+                updateGlobalStatus('💡 Create a new wallet to start', 'info');
+            }
+        });
+
+        // Create wallet
+        async function createWallet() {
+            updateWalletStatus('🔐 Creating wallet...', 'info');
+            document.getElementById('btn-create').disabled = true;
+            
+            try {
+                // Generate chain ID and owner
+                const chainId = generateChainId();
+                const owner = generateOwner();
+                
+                wallet = {
+                    chainId: chainId,
+                    owner: owner,
+                    created: true,
+                    timestamp: Date.now()
+                };
+                
+                // Save to localStorage
+                localStorage.setItem('linera_wallet', JSON.stringify(wallet));
+                
+                // Display
+                displayWallet();
+                updateWalletStatus('✅ Wallet created successfully!', 'success');
+                updateGlobalStatus('✅ Ready to trade!', 'success');
+                
+                // Enable trading
+                document.getElementById('btn-signal').disabled = false;
+                
+                console.log('✅ Wallet created:', wallet);
+                
+            } catch (error) {
+                console.error('❌ Wallet creation failed:', error);
+                updateWalletStatus('❌ Error: ' + error.message, 'error');
+            }
+            
+            document.getElementById('btn-create').disabled = false;
+        }
+
+        // Display wallet info
+        function displayWallet() {
+            document.getElementById('chain-id').textContent = wallet.chainId;
+            document.getElementById('owner').textContent = wallet.owner;
+            document.getElementById('wallet-info').style.display = 'block';
+            
+            updateWalletStatus('✅ Wallet active', 'success');
+        }
+
+        // Test GraphQL connection
+        async function testGraphQL() {
+            updateGlobalStatus('🧪 Testing GraphQL...', 'info');
+            
+            try {
+                const response = await fetch(CONFIG.graphqlUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: 'query { chains { list } }'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('GraphQL Response:', data);
+                    updateGlobalStatus('✅ GraphQL connected!', 'success');
+                    alert('GraphQL connected!\n\n' + JSON.stringify(data, null, 2));
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                console.error('GraphQL test failed:', error);
+                updateGlobalStatus('⚠️ GraphQL not available (using demo mode)', 'warning');
+                alert('GraphQL not available.\n\nUsing demo mode for now.\n\nError: ' + error.message);
+            }
+        }
+
+        // Generate AI signal
+        function generateSignal() {
+            if (!wallet.created) {
+                alert('Please create a wallet first');
+                return;
+            }
+            
+            const signals = [
+                { type: 'BUY', pair: 'BTC/USD', price: 42500, confidence: 0.85, reason: 'Strong uptrend detected', chain: wallet.chainId.substring(0, 8) },
+                { type: 'SELL', pair: 'ETH/USD', price: 2250, confidence: 0.78, reason: 'Resistance level reached', chain: wallet.chainId.substring(0, 8) },
+                { type: 'BUY', pair: 'SOL/USD', price: 98, confidence: 0.92, reason: 'Breakout pattern forming', chain: wallet.chainId.substring(0, 8) },
+                { type: 'BUY', pair: 'LINERA/USD', price: 1.25, confidence: 0.88, reason: 'New blockchain momentum', chain: wallet.chainId.substring(0, 8) },
+            ];
+            
+            const signal = signals[Math.floor(Math.random() * signals.length)];
+            
+            // Display signal
+            const container = document.getElementById('signals-container');
+            container.innerHTML = `
+                <div class="signal signal-${signal.type.toLowerCase()}">
+                    <strong>${signal.type} ${signal.pair}</strong><br>
+                    Price: $${signal.price.toLocaleString()}<br>
+                    Confidence: ${(signal.confidence * 100).toFixed(0)}%<br>
+                    <small>${signal.reason}</small><br>
+                    <small style="opacity: 0.7;">Chain: ${signal.chain}...</small>
+                </div>
+            `;
+            
+            // Add to history
+            addToHistory(signal);
+        }
+
+        // Add to history
+        function addToHistory(signal) {
+            const container = document.getElementById('history-container');
+            const historyEl = document.createElement('div');
+            historyEl.className = 'signal signal-' + signal.type.toLowerCase();
+            historyEl.innerHTML = `
+                <small>${new Date().toLocaleTimeString()}</small><br>
+                <strong>${signal.type} ${signal.pair}</strong> @ $${signal.price.toLocaleString()}
+            `;
+            
+            if (container.querySelector('.status')) {
+                container.innerHTML = '';
+            }
+            
+            container.insertBefore(historyEl, container.firstChild);
+            
+            // Keep last 5
+            while (container.children.length > 5) {
+                container.removeChild(container.lastChild);
+            }
+        }
+
+        // Reset wallet
+        function resetWallet() {
+            if (confirm('Reset wallet? This will delete all data.')) {
+                localStorage.clear();
+                wallet = { chainId: null, owner: null, created: false };
+                document.getElementById('wallet-info').style.display = 'none';
+                document.getElementById('btn-signal').disabled = true;
+                updateWalletStatus('Ready to create wallet...', 'info');
+                updateGlobalStatus('💡 Create a new wallet to start', 'info');
+            }
+        }
+
+        // Helpers
+        function generateChainId() {
+            const hex = '0123456789abcdef';
+            let id = '';
+            for (let i = 0; i < 64; i++) {
+                id += hex[Math.floor(Math.random() * 16)];
+            }
+            return id;
+        }
+
+        function generateOwner() {
+            return 'owner_' + Math.random().toString(36).substring(2, 15) + 
+                   Math.random().toString(36).substring(2, 15);
+        }
+
+        function updateGlobalStatus(msg, type) {
+            const el = document.getElementById('global-status');
+            el.textContent = msg;
+            el.className = 'status ' + type;
+        }
+
+        function updateWalletStatus(msg, type) {
+            const el = document.getElementById('wallet-status');
+            el.textContent = msg;
+            el.className = 'status ' + type;
+        }
+    </script>
+</body>
+</html>

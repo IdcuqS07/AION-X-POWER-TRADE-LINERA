@@ -1,0 +1,9 @@
+[package]
+name = "portfolio"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ai-trading-abi = { path = "../abi" }
+linera-sdk = { workspace = true }
+serde = { workspace = true }

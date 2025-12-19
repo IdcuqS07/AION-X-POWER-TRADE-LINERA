@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Power Trade - Login</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 400px;
+            text-align: center;
+        }
+        .logo { font-size: 2.5em; margin-bottom: 10px; color: #667eea; }
+        .title { font-size: 1.8em; margin-bottom: 30px; color: #333; }
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        label { display: block; margin-bottom: 5px; color: #555; font-weight: 500; }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .login-btn:hover { transform: translateY(-2px); }
+        .wallet-info {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            text-align: left;
+        }
+        .wallet-item {
+            margin-bottom: 10px;
+            padding: 8px;
+            background: white;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        .success { color: #28a745; font-weight: 600; }
+        .continue-btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">🚀</div>
+        <h1 class="title">AI Power Trade</h1>
+        
+        <form id="loginForm">
+            <div class="input-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" required>
+            </div>
+            
+            <div class="input-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" required>
+            </div>
+            
+            <button type="submit" class="login-btn">Login & Create Wallet</button>
+        </form>
+        
+        <div id="walletInfo" class="wallet-info">
+            <div class="success">✅ Account Created Successfully!</div>
+            <div class="wallet-item">
+                <strong>Owner ID:</strong> <span id="ownerId"></span>
+            </div>
+            <div class="wallet-item">
+                <strong>Wallet Address:</strong> <span id="walletAddress"></span>
+            </div>
+            <div class="wallet-item">
+                <strong>Chain ID:</strong> <span id="chainId"></span>
+            </div>
+            <div class="wallet-item">
+                <strong>Balance:</strong> <span id="balance">10,000 USDT</span>
+            </div>
+            <button class="continue-btn" onclick="goToTrading()">Continue to Trading</button>
+        </div>
+    </div>
+
+    <script>
+        function generateWalletData(username, email) {
+            // Generate deterministic wallet data based on user input
+            const hash = btoa(username + email + Date.now()).replace(/[^a-zA-Z0-9]/g, '');
+            
+            return {
+                ownerId: `owner_${hash.substring(0, 8)}`,
+                walletAddress: `0x${hash.substring(8, 48)}`,
+                chainId: `chain_${hash.substring(48, 56)}`,
+                balance: "10,000 USDT"
+            };
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            
+            // Generate wallet data
+            const walletData = generateWalletData(username, email);
+            
+            // Store user data
+            localStorage.setItem('userProfile', JSON.stringify({
+                username,
+                email,
+                ...walletData,
+                loginTime: new Date().toISOString()
+            }));
+            
+            // Display wallet info
+            document.getElementById('ownerId').textContent = walletData.ownerId;
+            document.getElementById('walletAddress').textContent = walletData.walletAddress;
+            document.getElementById('chainId').textContent = walletData.chainId;
+            document.getElementById('balance').textContent = walletData.balance;
+            
+            // Show wallet info
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('walletInfo').style.display = 'block';
+        });
+
+        function goToTrading() {
+            window.location.href = 'trading.html';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+[project]
+name = "ai-power-trade"
+description = "AI-powered trading platform on Linera blockchain"
+authors = ["AI POWER TRADE Team"]
+
+[[application]]
+name = "ai-power-trading"
+path = "./trading"
+description = "Main trading application with AI signals"
+
+[[application]]
+name = "ai-power-wallet"
+path = "./wallet"
+description = "Wallet management application"
+
+[network]
+validator_endpoints = [
+    "http://localhost:19100",
+    "http://localhost:19101", 
+    "http://localhost:19102",
+    "http://localhost:19103"
+]
+
+[service]
+port = 8080
+host = "localhost"

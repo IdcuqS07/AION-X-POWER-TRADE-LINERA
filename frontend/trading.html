@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Power Trade - Linera Integration</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; min-height: 100vh; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 30px; position: relative; }
+        .header h1 { font-size: 3em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header p { font-size: 1.2em; opacity: 0.9; }
+        .user-wallet { position: absolute; top: 0; right: 0; background: rgba(0,0,0,0.3); padding: 10px 15px; border-radius: 8px; font-size: 0.85em; text-align: right; min-width: 200px; }
+        .wallet-item { margin-bottom: 3px; }
+        .wallet-label { opacity: 0.7; }
+        .wallet-value { font-family: monospace; font-weight: bold; }
+        .status-bar { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
+        .status-item { text-align: center; }
+        .status-value { font-size: 1.5em; font-weight: bold; }
+        .status-label { font-size: 0.9em; opacity: 0.8; }
+        .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .portfolio-section, .signals-section { background: rgba(255,255,255,0.1); padding: 25px; border-radius: 15px; backdrop-filter: blur(10px); }
+        .section-title { font-size: 1.8em; margin-bottom: 20px; border-bottom: 2px solid rgba(255,255,255,0.3); padding-bottom: 10px; }
+        .portfolio-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; text-align: center; }
+        .stat-value { font-size: 2.2em; font-weight: bold; margin-bottom: 5px; }
+        .stat-label { font-size: 0.9em; opacity: 0.8; }
+        .positions { margin-top: 20px; }
+        .position { background: rgba(255,255,255,0.1); padding: 15px; margin: 10px 0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .signals-grid { display: grid; gap: 20px; }
+        .signal-card { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; border-left: 4px solid; transition: transform 0.2s; }
+        .signal-card:hover { transform: translateY(-2px); }
+        .signal-card.buy { border-left-color: #00ff88; }
+        .signal-card.sell { border-left-color: #ff4444; }
+        .signal-card.hold { border-left-color: #ffa500; }
+        .signal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .symbol { font-size: 1.4em; font-weight: bold; }
+        .signal-type { padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 0.9em; }
+        .signal-type.buy { background: #00ff88; color: black; }
+        .signal-type.sell { background: #ff4444; color: white; }
+        .signal-type.hold { background: #ffa500; color: black; }
+        .signal-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+        .metric { display: flex; justify-content: space-between; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 5px; }
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1em; transition: all 0.2s; }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .btn-buy { background: #00ff88; color: black; }
+        .btn-sell { background: #ff4444; color: white; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .profit { color: #00ff88; }
+        .loss { color: #ff4444; }
+        .connection-status { display: flex; align-items: center; gap: 10px; }
+        .status-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .status-dot.connected { background: #00ff88; animation: pulse 2s infinite; }
+        .status-dot.disconnected { background: #ff4444; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .chain-info { font-size: 0.8em; opacity: 0.7; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div id="userInfo" class="user-wallet" style="display: none;">
+                <div class="wallet-item">👤 <span class="wallet-label">User:</span> <span id="userName" class="wallet-value"></span></div>
+                <div class="wallet-item">💼 <span class="wallet-label">Wallet:</span> <span id="userWallet" class="wallet-value"></span></div>
+                <div class="wallet-item">🏦 <span class="wallet-label">Owner:</span> <span id="ownerId" class="wallet-value"></span></div>
+                <div class="wallet-item">⛓️ <span class="wallet-label">Chain:</span> <span id="userChain" class="wallet-value"></span></div>
+            </div>
+            <h1>🚀 AI Power Trade</h1>
+            <p>Powered by Linera Multi-Chain Architecture</p>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-value" id="chainId">Chain: Loading...</div>
+                <div class="status-label">Active Chain</div>
+            </div>
+            <div class="connection-status">
+                <div class="status-dot connected" id="statusDot"></div>
+                <span id="connectionStatus">Connected to Linera</span>
+            </div>
+            <div class="status-item">
+                <div class="status-value" id="blockTime">< 0.5s</div>
+                <div class="status-label">Block Time</div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="portfolio-section">
+                <h2 class="section-title">📊 Portfolio</h2>
+                
+                <div class="portfolio-stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="balance">$10,000</div>
+                        <div class="stat-label">Available Balance</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalValue">$10,485</div>
+                        <div class="stat-label">Total Portfolio</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value profit" id="pnl">+$485</div>
+                        <div class="stat-label">Unrealized P&L</div>
+                    </div>
+                </div>
+
+                <div class="positions">
+                    <h3>Active Positions</h3>
+                    <div class="position">
+                        <div>
+                            <strong>BTC</strong><br>
+                            <small>0.005 BTC</small>
+                        </div>
+                        <div>
+                            <div>Entry: $48,500</div>
+                            <div>Current: $49,750</div>
+                        </div>
+                        <div class="profit">+2.58%</div>
+                    </div>
+                    <div class="position">
+                        <div>
+                            <strong>ETH</strong><br>
+                            <small>0.15 ETH</small>
+                        </div>
+                        <div>
+                            <div>Entry: $2,450</div>
+                            <div>Current: $2,495</div>
+                        </div>
+                        <div class="profit">+1.84%</div>
+                    </div>
+                </div>
+
+                <div class="chain-info">
+                    Portfolio Chain: e476187f...cce16a65<br>
+                    Last Update: <span id="lastUpdate">Just now</span>
+                </div>
+            </div>
+
+            <div class="signals-section">
+                <h2 class="section-title">🎯 AI Trading Signals</h2>
+                
+                <div class="signals-grid">
+                    <div class="signal-card buy">
+                        <div class="signal-header">
+                            <div class="symbol">BTC/USD</div>
+                            <div class="signal-type buy">STRONG BUY</div>
+                        </div>
+                        <div class="signal-metrics">
+                            <div class="metric">
+                                <span>Confidence:</span>
+                                <span><strong>92.3%</strong></span>
+                            </div>
+                            <div class="metric">
+                                <span>RSI:</span>
+                                <span>28.5</span>
+                            </div>
+                            <div class="metric">
+                                <span>Price:</span>
+                                <span>$49,750</span>
+                            </div>
+                            <div class="metric">
+                                <span>Target:</span>
+                                <span>$52,000</span>
+                            </div>
+                        </div>
+                        <p style="margin: 10px 0; font-size: 0.9em; opacity: 0.9;">
+                            Extremely oversold conditions. Strong reversal signal detected with high probability.
+                        </p>
+                        <button class="btn btn-buy" onclick="executeLinearTrade('BTC', 'BUY', 0.001)">
+                            Execute BUY (0.001 BTC)
+                        </button>
+                    </div>
+
+                    <div class="signal-card sell">
+                        <div class="signal-header">
+                            <div class="symbol">ETH/USD</div>
+                            <div class="signal-type sell">SELL</div>
+                        </div>
+                        <div class="signal-metrics">
+                            <div class="metric">
+                                <span>Confidence:</span>
+                                <span><strong>78.9%</strong></span>
+                            </div>
+                            <div class="metric">
+                                <span>RSI:</span>
+                                <span>72.3</span>
+                            </div>
+                            <div class="metric">
+                                <span>Price:</span>
+                                <span>$2,495</span>
+                            </div>
+                            <div class="metric">
+                                <span>Target:</span>
+                                <span>$2,350</span>
+                            </div>
+                        </div>
+                        <p style="margin: 10px 0; font-size: 0.9em; opacity: 0.9;">
+                            Overbought territory reached. Consider taking profits on existing positions.
+                        </p>
+                        <button class="btn btn-sell" onclick="executeLinearTrade('ETH', 'SELL', 0.05)">
+                            Execute SELL (0.05 ETH)
+                        </button>
+                    </div>
+
+                    <div class="signal-card buy">
+                        <div class="signal-header">
+                            <div class="symbol">SOL/USD</div>
+                            <div class="signal-type buy">BUY</div>
+                        </div>
+                        <div class="signal-metrics">
+                            <div class="metric">
+                                <span>Confidence:</span>
+                                <span><strong>85.7%</strong></span>
+                            </div>
+                            <div class="metric">
+                                <span>RSI:</span>
+                                <span>32.1</span>
+                            </div>
+                            <div class="metric">
+                                <span>Price:</span>
+                                <span>$98.50</span>
+                            </div>
+                            <div class="metric">
+                                <span>Target:</span>
+                                <span>$105.00</span>
+                            </div>
+                        </div>
+                        <p style="margin: 10px 0; font-size: 0.9em; opacity: 0.9;">
+                            Oversold bounce expected. Good risk/reward ratio for entry.
+                        </p>
+                        <button class="btn btn-buy" onclick="executeLinearTrade('SOL', 'BUY', 1.0)">
+                            Execute BUY (1.0 SOL)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="chain-info">
+                    Signal Chain: a123456b...def78901<br>
+                    Trading Chain: b234567c...efg89012<br>
+                    Last Signal: <span id="lastSignal">2 seconds ago</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simulate Linera connection
+        let isConnected = true;
+        let chainId = "e476187f6ddfeb9d588c7b45d3df334d5501d6499b3f9ad5595cae86cce16a65";
+        
+        function updateConnectionStatus() {
+            const statusDot = document.getElementById('statusDot');
+            const connectionStatus = document.getElementById('connectionStatus');
+            const chainIdElement = document.getElementById('chainId');
+            
+            if (isConnected) {
+                statusDot.className = 'status-dot connected';
+                connectionStatus.textContent = 'Connected to Linera';
+                chainIdElement.textContent = `Chain: ${chainId.substring(0, 8)}...${chainId.substring(chainId.length - 8)}`;
+            } else {
+                statusDot.className = 'status-dot disconnected';
+                connectionStatus.textContent = 'Disconnected';
+                chainIdElement.textContent = 'Chain: Offline';
+            }
+        }
+
+        async function executeLinearTrade(symbol, side, amount) {
+            const button = event.target;
+            button.disabled = true;
+            button.textContent = 'Executing on Linera...';
+            
+            try {
+                // Simulate Linera GraphQL call
+                console.log(`Executing ${side} ${amount} ${symbol} on Linera chain`);
+                
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // Simulate successful execution
+                const tradeId = `trade_${Date.now()}`;
+                alert(`✅ Trade executed successfully!\n\nTrade ID: ${tradeId}\nSymbol: ${symbol}\nSide: ${side}\nAmount: ${amount}\n\nExecuted on Linera microchain with sub-second finality!`);
+                
+                // Update portfolio
+                updatePortfolioAfterTrade(symbol, side, amount);
+                
+            } catch (error) {
+                alert(`❌ Trade execution failed: ${error.message}`);
+            } finally {
+                button.disabled = false;
+                button.textContent = `Execute ${side} (${amount} ${symbol})`;
+            }
+        }
+
+        function updatePortfolioAfterTrade(symbol, side, amount) {
+            // Simulate portfolio updates
+            const totalValue = document.getElementById('totalValue');
+            const pnl = document.getElementById('pnl');
+            
+            const currentTotal = parseFloat(totalValue.textContent.replace('$', '').replace(',', ''));
+            const change = (Math.random() - 0.3) * 200; // Slight positive bias
+            const newTotal = currentTotal + change;
+            const newPnl = newTotal - 10000;
+            
+            totalValue.textContent = `$${newTotal.toFixed(0)}`;
+            pnl.textContent = `${newPnl >= 0 ? '+' : ''}$${newPnl.toFixed(0)}`;
+            pnl.className = newPnl >= 0 ? 'stat-value profit' : 'stat-value loss';
+            
+            // Update last update time
+            document.getElementById('lastUpdate').textContent = 'Just now';
+        }
+
+        function updatePrices() {
+            // Simulate real-time price updates
+            const prices = document.querySelectorAll('.metric span:last-child');
+            prices.forEach(price => {
+                if (price.textContent.includes('$') && !price.textContent.includes('%')) {
+                    const current = parseFloat(price.textContent.replace('$', '').replace(',', ''));
+                    if (current > 100) { // Only update actual prices, not percentages
+                        const change = (Math.random() - 0.5) * current * 0.01;
+                        const newPrice = current + change;
+                        price.textContent = `$${newPrice.toFixed(2)}`;
+                    }
+                }
+            });
+            
+            // Update signal timestamp
+            document.getElementById('lastSignal').textContent = `${Math.floor(Math.random() * 10)} seconds ago`;
+        }
+
+        // Check user session and display wallet info
+        function loadUserSession() {
+            const userProfile = localStorage.getItem('userProfile');
+            if (userProfile) {
+                const user = JSON.parse(userProfile);
+                document.getElementById('userName').textContent = user.username;
+                document.getElementById('userWallet').textContent = user.wallet_address.substring(0, 10) + '...';
+                document.getElementById('ownerId').textContent = user.owner_id;
+                document.getElementById('userChain').textContent = user.chain_id;
+                document.getElementById('userInfo').style.display = 'block';
+                
+                // Update balance from user data
+                document.getElementById('balance').textContent = `$${user.balance.toLocaleString()}`;
+            } else {
+                // Redirect to login if no session
+                window.location.href = 'login.html';
+            }
+        }
+
+        // Initialize
+        loadUserSession();
+        updateConnectionStatus();
+        
+        // Update prices every 3 seconds
+        setInterval(updatePrices, 3000);
+        
+        // Simulate occasional connection issues
+        setInterval(() => {
+            if (Math.random() < 0.05) { // 5% chance
+                isConnected = false;
+                updateConnectionStatus();
+                setTimeout(() => {
+                    isConnected = true;
+                    updateConnectionStatus();
+                }, 2000);
+            }
+        }, 10000);
+    </script>
+</body>
+</html>

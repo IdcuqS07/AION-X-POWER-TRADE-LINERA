@@ -1,0 +1,18 @@
+[package]
+name = "trading"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+abi.workspace = true
+async-graphql.workspace = true
+linera-sdk.workspace = true
+serde.workspace = true
+
+[[bin]]
+name = "trading_contract"
+path = "src/contract.rs"
+
+[[bin]]
+name = "trading_service"
+path = "src/service.rs"

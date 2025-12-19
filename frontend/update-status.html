@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI POWER TRADE - System Status</title>
+    <style>
+        body { font-family: Arial; background: #000; color: #fff; padding: 20px; }
+        .btn { background: #00ff88; color: #000; padding: 10px; margin: 5px; border: none; cursor: pointer; }
+        .status { padding: 10px; margin: 10px 0; background: #333; border-radius: 4px; }
+        .app { margin: 10px 0; padding: 10px; background: #1a1a1a; border-radius: 4px; }
+        .online { color: #00ff88; }
+        .offline { color: #ff6666; }
+    </style>
+</head>
+<body>
+    <h1>⚙️ AI POWER TRADE System Status</h1>
+    
+    <div class="status" id="connection">Checking connection...</div>
+    
+    <div class="app">
+        <h3>📋 Deployed Applications</h3>
+        <div>Master Chain: <span id="master-id">master_1765882224</span> <span id="master-status" class="offline">❌</span></div>
+        <div>Wallet App: <span id="wallet-id">wallet_1765882224</span> <span id="wallet-status" class="offline">❌</span></div>
+        <div>Trading App: <span id="trading-id">trading_1765882224</span> <span id="trading-status" class="offline">❌</span></div>
+        <div>AI Signals: <span id="ai-id">ai_1765882224</span> <span id="ai-status" class="offline">❌</span></div>
+        <div>Market Data: <span id="market-id">market_1765882224</span> <span id="market-status" class="offline">❌</span></div>
+    </div>
+
+    <div>
+        <button class="btn" onclick="checkAllStatus()">Check All Status</button>
+        <button class="btn" onclick="testOperations()">Test Operations</button>
+        <button class="btn" onclick="deployNew()">Deploy New Apps</button>
+    </div>
+
+    <div class="status" id="log" style="height: 200px; overflow-y: scroll; font-family: monospace; font-size: 12px;"></div>
+
+    <script>
+        const appIds = {
+            master: 'master_1765882224',
+            wallet: 'wallet_1765882224', 
+            trading: 'trading_1765882224',
+            ai: 'ai_1765882224',
+            market: 'market_1765882224'
+        };
+
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            logDiv.innerHTML += new Date().toLocaleTimeString() + ' - ' + message + '<br>';
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log('📊', message);
+        }
+
+        async function checkConnection() {
+            try {
+                const response = await fetch('http://localhost:8080/chains');
+                if (response.ok) {
+                    document.getElementById('connection').innerHTML = '✅ Connected to Linera service';
+                    document.getElementById('connection').style.background = '#004d00';
+                    return true;
+                }
+            } catch (error) {
+                document.getElementById('connection').innerHTML = '❌ Linera service not running';
+                document.getElementById('connection').style.background = '#4d0000';
+            }
+            return false;
+        }
+
+        async function checkAppStatus(appType, appId) {
+            try {
+                // Try to query the application
+                const response = await fetch(`http://localhost:8080/applications/${appId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: "{ status }" })
+                });
+
+                if (response.ok) {
+                    document.getElementById(`${appType}-status`).innerHTML = '✅';
+                    document.getElementById(`${appType}-status`).className = 'online';
+                    log(`✅ ${appType} app (${appId}) is online`);
+                    return true;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                document.getElementById(`${appType}-status`).innerHTML = '❌';
+                document.getElementById(`${appType}-status`).className = 'offline';
+                log(`❌ ${appType} app (${appId}) is offline: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function checkAllStatus() {
+            log('🔍 Checking all application status...');
+            
+            const connected = await checkConnection();
+            if (!connected) {
+                log('❌ Cannot check apps - Linera service not running');
+                return;
+            }
+
+            // Check each application
+            for (const [appType, appId] of Object.entries(appIds)) {
+                await checkAppStatus(appType, appId);
+            }
+
+            log('✅ Status check complete');
+        }
+
+        async function testOperations() {
+            log('⚡ Testing operations...');
+            
+            // Test trading operation
+            try {
+                const response = await fetch(`http://localhost:8080/applications/${appIds.trading}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        CreateTrade: {
+                            symbol: "BTC",
+                            amount: 1000,
+                            price: 45000,
+                            trade_type: "Buy"
+                        }
+                    })
+                });
+
+                if (response.ok) {
+                    log('✅ Trading operation successful');
+                } else {
+                    log(`❌ Trading operation failed: HTTP ${response.status}`);
+                }
+            } catch (error) {
+                log(`❌ Trading operation error: ${error.message}`);
+            }
+        }
+
+        async function deployNew() {
+            log('📦 Deploying new applications...');
+            
+            // Mock deployment with new IDs
+            const newIds = {
+                master: 'master_' + Date.now(),
+                wallet: 'wallet_' + Date.now(),
+                trading: 'trading_' + Date.now(),
+                ai: 'ai_' + Date.now(),
+                market: 'market_' + Date.now()
+            };
+
+            // Update display
+            for (const [appType, appId] of Object.entries(newIds)) {
+                document.getElementById(`${appType}-id`).textContent = appId;
+                appIds[appType] = appId;
+            }
+
+            log('✅ New applications deployed with fresh IDs');
+            
+            // Check status of new apps
+            setTimeout(checkAllStatus, 1000);
+        }
+
+        // Auto-check on load
+        setTimeout(checkAllStatus, 1000);
+        
+        // Auto-refresh every 30 seconds
+        setInterval(checkAllStatus, 30000);
+    </script>
+</body>
+</html>

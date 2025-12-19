@@ -1,0 +1,16 @@
+#!/bin/bash
+echo "📤 Uploading fixed AI-POWER-TRADE-SIMPLE.html..."
+scp AI-POWER-TRADE-SIMPLE.html root@152.42.199.50:/opt/ai-power-trade/
+echo ""
+echo "✅ Uploaded!"
+echo ""
+echo "🧪 Test:"
+echo "   http://152.42.199.50/AI-POWER-TRADE-SIMPLE.html"
+echo ""
+echo "📋 Steps:"
+echo "   1. Open URL"
+echo "   2. Open Console (F12)"
+echo "   3. Click 'Connect to Linera'"
+echo "   4. Should see: '🎮 Activating demo mode...'"
+echo "   5. Should see: '✅ Demo mode activated successfully'"
+echo ""

@@ -1,0 +1,156 @@
+# 🚀 DEPLOY LINERA FRONTEND - STEP BY STEP COMMANDS
+
+## Step 1: Upload HTML ke VPS
+scp AI-POWER-TRADE-LINERA.html root@152.42.199.50:/opt/ai-power-trade/
+
+## Step 2: SSH ke VPS
+ssh root@152.42.199.50
+
+## Step 3: Install Node.js (jika belum ada)
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt-get install -y nodejs
+node --version
+
+## Step 4: Buat HTTP Server dengan CORS Headers
+cd /opt/ai-power-trade
+
+cat > linera-server.js << 'EOF'
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+
+const PORT = 3000;
+const HOST = '0.0.0.0';
+
+const mimeTypes = {
+    '.html': 'text/html',
+    '.js': 'text/javascript',
+    '.css': 'text/css',
+    '.json': 'application/json',
+};
+
+const server = http.createServer((req, res) => {
+    // Set CORS headers for Linera WASM
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    let filePath = '.' + req.url;
+    if (filePath === './') {
+        filePath = './AI-POWER-TRADE-LINERA.html';
+    }
+    
+    const extname = String(path.extname(filePath)).toLowerCase();
+    const contentType = mimeTypes[extname] || 'application/octet-stream';
+    
+    fs.readFile(filePath, (error, content) => {
+        if (error) {
+            if (error.code === 'ENOENT') {
+                res.writeHead(404);
+                res.end('404 Not Found');
+            } else {
+                res.writeHead(500);
+                res.end('500 Internal Server Error: ' + error.code);
+            }
+        } else {
+            res.writeHead(200, { 'Content-Type': contentType });
+            res.end(content, 'utf-8');
+        }
+    });
+});
+
+server.listen(PORT, HOST, () => {
+    console.log(`✅ Linera Frontend Server running at http://${HOST}:${PORT}/`);
+});
+EOF
+
+## Step 5: Stop existing server & Start new server
+pkill -f "node linera-server.js" || true
+nohup node linera-server.js > /var/log/linera-frontend.log 2>&1 &
+
+## Step 6: Test server
+sleep 2
+curl -I http://localhost:3000
+
+## Step 7: Update Nginx Config
+cp /etc/nginx/sites-available/default /etc/nginx/sites-available/default.backup
+
+cat > /etc/nginx/sites-available/default << 'EOF'
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    
+    root /opt/ai-power-trade;
+    index AI-POWER-TRADE-LINERA.html;
+    
+    server_name _;
+    
+    # Linera frontend with CORS headers
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        
+        # CORS headers for Linera WASM
+        add_header Cross-Origin-Opener-Policy same-origin always;
+        add_header Cross-Origin-Embedder-Policy require-corp always;
+    }
+    
+    # GraphQL endpoint
+    location /graphql {
+        proxy_pass http://localhost:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        
+        add_header Access-Control-Allow-Origin * always;
+        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Content-Type" always;
+        
+        if ($request_method = OPTIONS) {
+            return 204;
+        }
+    }
+}
+EOF
+
+## Step 8: Test & Reload Nginx
+nginx -t
+systemctl reload nginx
+
+## Step 9: Check Status
+echo "=== SERVICES STATUS ==="
+ps aux | grep -E "node|nginx" | grep -v grep
+echo ""
+echo "=== PORTS ==="
+netstat -tlnp | grep -E "3000|80"
+echo ""
+echo "=== LOGS ==="
+tail -20 /var/log/linera-frontend.log
+
+## Step 10: Test dari browser
+# Buka: http://152.42.199.50/
+# Cek console browser (F12)
+# Klik "Create Wallet"
+
+## MONITORING COMMANDS:
+
+# Lihat log frontend
+tail -f /var/log/linera-frontend.log
+
+# Lihat log nginx
+tail -f /var/log/nginx/error.log
+
+# Restart server jika perlu
+pkill -f "node linera-server.js"
+cd /opt/ai-power-trade && nohup node linera-server.js > /var/log/linera-frontend.log 2>&1 &
+
+# Test CORS headers
+curl -I http://152.42.199.50/
+
+# Expected output:
+# Cross-Origin-Opener-Policy: same-origin
+# Cross-Origin-Embedder-Policy: require-corp

@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  linera-node:
+    image: lineraio/linera:latest
+    ports:
+      - "8080:8080"
+      - "9000:9000"
+    volumes:
+      - ./data:/data
+      - ../target:/app/target
+    environment:
+      - RUST_LOG=info
+    command: >
+      sh -c "
+        linera net up --testing-prng-seed 37 &&
+        linera service --port 8080
+      "
+
+  ai-power-trade:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    depends_on:
+      - linera-node
+    volumes:
+      - ../target:/app/target
+    environment:
+      - LINERA_RPC_URL=http://linera-node:8080
+    command: ./deploy/deploy.sh

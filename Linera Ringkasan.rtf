@@ -1,0 +1,133 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 # 1. Install Linera\
+git clone https://github.com/linera-io/linera-protocol.git\
+cd linera-protocol\
+cargo build --release\
+export PATH="$PWD/target/release:$PATH"\
+\
+# 2. Init Wallet dengan Testnet\
+linera wallet init --with-new-chain \\\
+  --faucet https://faucet.testnet-babbage.linera.net\
+\
+# 3. Create Project\
+mkdir ai-trading-linera && cd ai-trading-linera\
+# Copy contract.rs dan service.rs ke project\
+\
+# 4. Build\
+cargo build --target wasm32-unknown-unknown --release\
+\
+# 5. Deploy\
+linera publish-bytecode target/wasm32.../ai_trading.wasm\
+linera create-application <bytecode-id>\
+\
+# 6. Start Service\
+linera service --port 8080\
+\
+# 7. Query via GraphQL\
+curl http://localhost:8080/graphql -d '\{"query": "\{ portfolio \{ balance \} \}"\}'\
+```\
+\
+## \uc0\u55357 \u56481  Keunggulan AI Trading di Linera\
+\
+1. **Ultra Fast**: Setiap user punya chain sendiri, no competition\
+2. **Low Latency**: Perfect untuk high-frequency trading\
+3. **Scalable**: Add chains as needed\
+4. **GraphQL Native**: Easy API integration\
+5. **Cross-chain**: Bisa communicate dengan token pools, oracles\
+\
+## \uc0\u55357 \u56580  Flow Trading di Linera\
+```\
+User \uc0\u8594  GraphQL Query \u8594  Linera Service\
+                            \uc0\u8595 \
+                    Contract Execution\
+                            \uc0\u8595 \
+                    State Update (Portfolio)\
+                            \uc0\u8595 \
+                    Response (Trade Result)\
+\
+# 1. Update AI Signal\
+mutation \{\
+  updateSignal(symbol: "BTC", price: 50000, rsi: 25.5)\
+\}\
+\
+# 2. Check Signal\
+query \{\
+  signal(symbol: "BTC") \{\
+    signalType  # Will be "BUY" because RSI < 30\
+    confidence\
+    recommendation\
+  \}\
+\}\
+\
+# 3. Execute Trade if signal is good\
+mutation \{\
+  executeTrade(symbol: "BTC", side: BUY, amount: 0.1) \{\
+    id\
+    price\
+    pnl\
+  \}\
+\}\
+\
+# 4. Check Portfolio\
+query \{\
+  portfolio \{\
+    balance\
+    positions \{\
+      symbol\
+      unrealizedPnl\
+    \}\
+  \}\
+\}\
+\
+\
+# Download deployment script\
+curl -O https://raw.githubusercontent.com/.../deploy.sh\
+chmod +x deploy.sh\
+\
+# Run\
+./deploy.sh\
+\
+# Script akan:\
+# - Install Linera\
+# - Setup wallet\
+# - Deploy trading app\
+# - Configure frontend\
+# - Start services\
+```\
+\
+## \uc0\u55357 \u56522  Perbandingan: Sebelum vs Sesudah\
+\
+| Aspek | FastAPI (Sekarang) | Linera (Sesudah) |\
+|-------|-------------------|------------------|\
+| **Latency** | 200-500ms | **50-100ms** \uc0\u9989  |\
+| **Finality** | N/A | **< 0.5s** \uc0\u9989  |\
+| **Cost** | $5-10/month | **$1-2/month** \uc0\u9989  |\
+| **Scalability** | Limited | **Unlimited** \uc0\u9989  |\
+| **Decentralization** | \uc0\u10060  | **\u9989 ** |\
+| **On-chain Audit** | \uc0\u10060  | **\u9989 ** |\
+\
+## \uc0\u55357 \u56481  Rekomendasi\
+\
+### **Gunakan Hybrid Approach:**\
+```\
+\uc0\u9484 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9488 \
+\uc0\u9474          Frontend (Vercel)           \u9474 \
+\uc0\u9474    Next.js + React + Tailwind        \u9474 \
+\uc0\u9492 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9516 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9496 \
+              \uc0\u9474 \
+      \uc0\u9484 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9524 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9488 \
+      \uc0\u9474                 \u9474 \
+\uc0\u9484 \u9472 \u9472 \u9472 \u9472 \u9472 \u9660 \u9472 \u9472 \u9472 \u9472 \u9472 \u9488    \u9484 \u9472 \u9472 \u9472 \u9472 \u9472 \u9660 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9488 \
+\uc0\u9474   FastAPI  \u9474    \u9474     Linera    \u9474 \
+\uc0\u9474  (Python)  \u9474    \u9474   (Rust/Wasm) \u9474 \
+\uc0\u9492 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9496    \u9492 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9472 \u9496 \
+      \uc0\u9474                 \u9474 \
+AI Prediction    Trade Execution\
+Heavy Compute    Portfolio State\
+Price Feeds      On-chain Records}

@@ -1,0 +1,20 @@
+[network]
+name = "ai-power-trade"
+rpc_url = "http://localhost:8080"
+ws_url = "ws://localhost:8080"
+
+[applications]
+wallet = { bytecode_id = "", service_id = "" }
+trading = { bytecode_id = "", service_id = "" }
+
+[chains]
+master = "e476187f6ddfeb9d588c7b45d3df334d5501d6499b3f9ad5595cae86cce16a65"
+user_chains = []
+ai_chains = []
+market_chains = []
+
+[parameters]
+initial_balance = 10000
+max_position_size = 1000
+trading_fee = 30
+min_trade_amount = 100

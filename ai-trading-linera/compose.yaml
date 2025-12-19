@@ -1,0 +1,11 @@
+services:
+  ai-trading:
+    build: .
+    ports:
+      - "8080:8080"  # Faucet
+      - "8081:8081"  # GraphQL API
+      - "3000:3000"  # Frontend
+    volumes:
+      - .:/build
+    environment:
+      - RUST_LOG=info

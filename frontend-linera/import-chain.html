@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Import Chain from CLI</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        .container {
+            background: #16213e;
+            padding: 30px;
+            border-radius: 10px;
+            border: 1px solid #0f3460;
+        }
+        h1 {
+            color: #e94560;
+            margin-top: 0;
+        }
+        .info {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        button {
+            background: #e94560;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #d63447;
+        }
+        .success {
+            background: #2ecc71;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            display: none;
+        }
+        .code {
+            background: #000;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 Import Chain from CLI</h1>
+        
+        <p>Chain berhasil dibuat via CLI! Sekarang import ke web app:</p>
+        
+        <div class="info">
+            <strong>Chain ID:</strong><br>
+            09375427cc4bbba74c4c7172a01b61bc28a79a0162c4d44bb936d9514c6c94d7
+            <br><br>
+            <strong>Owner:</strong><br>
+            0xd2e0affc7f2d6e5be00bf72ff27b3c0f8cfc076d18829e475e956b624d693209
+        </div>
+        
+        <button onclick="importChain()">✅ Import Chain to Web App</button>
+        <button onclick="openApp()">🚀 Open App</button>
+        
+        <div class="success" id="success">
+            ✅ Chain imported successfully!<br>
+            Click "Open App" to see WASM logs in action.
+        </div>
+        
+        <h3>What happens next:</h3>
+        <ol>
+            <li>Chain ID dan Owner akan disimpan ke localStorage</li>
+            <li>Web app akan restore wallet dengan data ini</li>
+            <li>Client akan connect ke validators</li>
+            <li><strong>WASM debug logs akan muncul di console!</strong></li>
+        </ol>
+        
+        <h3>Expected WASM Logs:</h3>
+        <div class="code">
+DEBUG run{enable_background_sync=true}: linera_core::updater: starting<br>
+DEBUG communicate_with_quorum total_validators=4<br>
+DEBUG handle_chain_info_query: linera_rpc::grpc::client: sending gRPC request<br>
+DEBUG download_certificates_by_heights: linera_rpc::grpc::client: sending gRPC request
+        </div>
+    </div>
+    
+    <script>
+        function importChain() {
+            const chainId = '09375427cc4bbba74c4c7172a01b61bc28a79a0162c4d44bb936d9514c6c94d7';
+            const owner = '0xd2e0affc7f2d6e5be00bf72ff27b3c0f8cfc076d18829e475e956b624d693209';
+            
+            // Import to localStorage
+            localStorage.setItem('linera_chain_id', chainId);
+            localStorage.setItem('linera_owner', owner);
+            localStorage.setItem('linera_network', 'testnet-conway');
+            
+            // Generate dummy mnemonic for now (real one would come from CLI export)
+            const dummyMnemonic = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
+            localStorage.setItem('linera_mnemonic', dummyMnemonic);
+            
+            console.log('✅ Chain imported to localStorage');
+            console.log('Chain ID:', chainId);
+            console.log('Owner:', owner);
+            
+            document.getElementById('success').style.display = 'block';
+        }
+        
+        function openApp() {
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

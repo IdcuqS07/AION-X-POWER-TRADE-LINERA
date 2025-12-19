@@ -7,7 +7,8 @@ export class FaucetManager {
     constructor() {
         this.FAUCET_AMOUNT = 100; // 100 LINERA tokens
         this.COOLDOWN_HOURS = 24;
-        this.API_ENDPOINT = '/api/faucet/claim'; // Will be implemented
+        this.API_BASE = window.location.origin; // Same origin
+        this.USE_REAL_API = true; // Set to true to use real backend
     }
 
     /**
@@ -47,9 +48,57 @@ export class FaucetManager {
     }
 
     /**
-     * Claim tokens (simulated for now)
+     * Claim tokens from backend API
      */
     async claimTokens(walletAddress, chainId) {
+        if (this.USE_REAL_API) {
+            return this.claimFromAPI(walletAddress, chainId);
+        } else {
+            return this.claimSimulated(walletAddress, chainId);
+        }
+    }
+
+    /**
+     * Claim from real backend API
+     */
+    async claimFromAPI(walletAddress, chainId) {
+        try {
+            const response = await fetch(`${this.API_BASE}/api/faucet/claim`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    address: walletAddress,
+                    chainId: chainId
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to claim tokens');
+            }
+
+            // Record claim time locally
+            localStorage.setItem(`faucet_claim_${walletAddress}`, Date.now().toString());
+
+            return {
+                success: true,
+                amount: data.amount,
+                txHash: data.txHash,
+                message: data.message
+            };
+
+        } catch (error) {
+            throw new Error(error.message || 'Failed to connect to faucet service');
+        }
+    }
+
+    /**
+     * Simulated claim (fallback)
+     */
+    async claimSimulated(walletAddress, chainId) {
         // Check if can claim
         const { canClaim, remainingTime } = this.canClaim(walletAddress);
         
@@ -60,9 +109,6 @@ export class FaucetManager {
         // Simulate API call
         return new Promise((resolve, reject) => {
             setTimeout(() => {
-                // For now, simulate successful claim
-                // In production, this would call real backend API
-                
                 const success = Math.random() > 0.1; // 90% success rate
                 
                 if (success) {
@@ -73,12 +119,12 @@ export class FaucetManager {
                         success: true,
                         amount: this.FAUCET_AMOUNT,
                         txHash: '0x' + Math.random().toString(16).substring(2, 66),
-                        message: `Successfully claimed ${this.FAUCET_AMOUNT} LINERA tokens!`
+                        message: `Successfully claimed ${this.FAUCET_AMOUNT} LINERA tokens! (Demo Mode)`
                     });
                 } else {
                     reject(new Error('Faucet temporarily unavailable. Please try again later.'));
                 }
-            }, 2000); // Simulate network delay
+            }, 2000);
         });
     }
 

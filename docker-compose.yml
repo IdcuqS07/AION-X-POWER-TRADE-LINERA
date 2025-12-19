@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  linera-validator:
+    image: lineraprotocol/linera:latest
+    ports:
+      - "8080:8080"
+      - "9000:9000"
+    volumes:
+      - ./data:/data
+      - ./bytecode:/bytecode
+    environment:
+      - RUST_LOG=info
+    command: >
+      linera-server run 
+      --storage rocksdb:/data/validator.db
+      --server /data/server.json
+      --shard 0
+      --genesis /data/genesis.json
+
+  ai-trading-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - linera-validator
+    environment:
+      - LINERA_ENDPOINT=http://linera-validator:8080
+
+  market-data-simulator:
+    build:
+      context: .
+      dockerfile: Dockerfile.simulator
+    depends_on:
+      - linera-validator
+    environment:
+      - LINERA_ENDPOINT=http://linera-validator:8080
+      - UPDATE_INTERVAL=5
+
+volumes:
+  data:

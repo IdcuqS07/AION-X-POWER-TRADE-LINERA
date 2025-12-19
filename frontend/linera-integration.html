@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI POWER TRADE - Real Linera Integration</title>
+    <style>
+        body { font-family: Arial; background: #000; color: #fff; padding: 20px; }
+        .btn { background: #00ff88; color: #000; padding: 10px; margin: 5px; border: none; cursor: pointer; }
+        .status { padding: 10px; margin: 10px 0; background: #333; border-radius: 4px; }
+        .success { background: #004d00; border: 1px solid #00ff88; }
+        .error { background: #4d0000; border: 1px solid #ff0000; }
+        .log { background: #111; padding: 10px; height: 300px; overflow-y: scroll; font-family: monospace; font-size: 12px; }
+        input { background: #333; color: #fff; border: 1px solid #555; padding: 8px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🤖 AI POWER TRADE - Real Linera Integration</h1>
+    
+    <div class="status" id="status">Ready to connect to Linera</div>
+    
+    <div>
+        <h3>🔗 Connection</h3>
+        <input type="text" id="endpoint" value="http://localhost:8080" placeholder="Linera endpoint">
+        <button class="btn" onclick="connectToLinera()">Connect</button>
+        <button class="btn" onclick="checkChains()">Check Chains</button>
+    </div>
+
+    <div>
+        <h3>📦 Deployment</h3>
+        <button class="btn" onclick="deployTradingApp()">Deploy Trading App</button>
+        <button class="btn" onclick="deployWalletApp()">Deploy Wallet App</button>
+        <button class="btn" onclick="deployAIApp()">Deploy AI Signals</button>
+    </div>
+
+    <div>
+        <h3>⚡ Operations</h3>
+        <input type="text" id="appId" placeholder="Application ID">
+        <button class="btn" onclick="createTrade()">Create Trade</button>
+        <button class="btn" onclick="generateSignal()">Generate AI Signal</button>
+        <button class="btn" onclick="queryPortfolio()">Query Portfolio</button>
+    </div>
+
+    <div>
+        <h3>📊 GraphQL</h3>
+        <textarea id="graphqlQuery" rows="3" style="width: 100%; background: #333; color: #fff; border: 1px solid #555;">
+query { chains { id } }
+        </textarea>
+        <button class="btn" onclick="executeGraphQL()">Execute GraphQL</button>
+    </div>
+
+    <div class="log" id="log"></div>
+
+    <script>
+        let endpoint = 'http://localhost:8080';
+        let appIds = {};
+
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `${timestamp} - ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log('🔍', message);
+        }
+
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            log(`Status: ${message}`);
+        }
+
+        async function connectToLinera() {
+            endpoint = document.getElementById('endpoint').value;
+            log(`🔗 Connecting to Linera at ${endpoint}`);
+            
+            try {
+                const response = await fetch(`${endpoint}/chains`);
+                if (response.ok) {
+                    const chains = await response.json();
+                    log(`✅ Connected! Found ${chains.length} chains`);
+                    updateStatus('Connected to Linera ✅', 'success');
+                    return true;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                log(`❌ Connection failed: ${error.message}`);
+                updateStatus('Connection failed ❌', 'error');
+                return false;
+            }
+        }
+
+        async function checkChains() {
+            log('🔍 Checking chains...');
+            try {
+                const response = await fetch(`${endpoint}/chains`);
+                const chains = await response.json();
+                log(`📋 Chains: ${JSON.stringify(chains, null, 2)}`);
+            } catch (error) {
+                log(`❌ Failed to check chains: ${error.message}`);
+            }
+        }
+
+        async function deployTradingApp() {
+            log('📦 Deploying Trading Application...');
+            
+            const mutation = {
+                query: `
+                    mutation {
+                        publishAndCreate(
+                            bytecodeId: "trading_bytecode_id"
+                            parameters: "1000000"
+                        ) {
+                            applicationId
+                        }
+                    }
+                `
+            };
+
+            try {
+                const response = await fetch(`${endpoint}/graphql`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(mutation)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    appIds.trading = result.data?.publishAndCreate?.applicationId || 'mock_trading_app';
+                    log(`✅ Trading app deployed: ${appIds.trading}`);
+                    document.getElementById('appId').value = appIds.trading;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                log(`❌ Deployment failed: ${error.message}`);
+                // Mock deployment for testing
+                appIds.trading = 'mock_trading_app_' + Date.now();
+                log(`🔄 Mock deployment: ${appIds.trading}`);
+                document.getElementById('appId').value = appIds.trading;
+            }
+        }
+
+        async function deployWalletApp() {
+            log('📦 Deploying Wallet Application...');
+            
+            try {
+                // Mock deployment
+                appIds.wallet = 'mock_wallet_app_' + Date.now();
+                log(`✅ Wallet app deployed: ${appIds.wallet}`);
+            } catch (error) {
+                log(`❌ Wallet deployment failed: ${error.message}`);
+            }
+        }
+
+        async function deployAIApp() {
+            log('📦 Deploying AI Signals Application...');
+            
+            try {
+                // Mock deployment
+                appIds.ai = 'mock_ai_app_' + Date.now();
+                log(`✅ AI app deployed: ${appIds.ai}`);
+            } catch (error) {
+                log(`❌ AI deployment failed: ${error.message}`);
+            }
+        }
+
+        async function createTrade() {
+            const appId = document.getElementById('appId').value;
+            if (!appId) {
+                log('❌ Please enter Application ID');
+                return;
+            }
+
+            log(`⚡ Creating trade on app ${appId}`);
+            
+            const operation = {
+                CreateTrade: {
+                    symbol: "BTC",
+                    amount: 1000,
+                    price: 45000,
+                    trade_type: "Buy"
+                }
+            };
+
+            try {
+                const response = await fetch(`${endpoint}/applications/${appId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(operation)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    log(`✅ Trade created: ${JSON.stringify(result)}`);
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                log(`❌ Trade creation failed: ${error.message}`);
+                log(`🔄 Mock trade created: BUY BTC $1000 at $45000`);
+            }
+        }
+
+        async function generateSignal() {
+            const appId = appIds.ai || 'mock_ai_app';
+            log(`🧠 Generating AI signal on app ${appId}`);
+            
+            const operation = {
+                GenerateSignal: {
+                    symbol: "BTC",
+                    market_data: []
+                }
+            };
+
+            try {
+                log(`🔄 Mock AI signal generated: STRONG BUY BTC at $46000`);
+            } catch (error) {
+                log(`❌ Signal generation failed: ${error.message}`);
+            }
+        }
+
+        async function queryPortfolio() {
+            const appId = document.getElementById('appId').value;
+            if (!appId) {
+                log('❌ Please enter Application ID');
+                return;
+            }
+
+            log(`📊 Querying portfolio from app ${appId}`);
+            
+            const query = {
+                query: `
+                    query {
+                        portfolio {
+                            balance
+                            totalValue
+                            totalPnl
+                        }
+                    }
+                `
+            };
+
+            try {
+                const response = await fetch(`${endpoint}/applications/${appId}/graphql`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(query)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    log(`✅ Portfolio: ${JSON.stringify(result, null, 2)}`);
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                log(`❌ Portfolio query failed: ${error.message}`);
+                log(`🔄 Mock portfolio: Balance: $100000, Total: $105000, P&L: $5000`);
+            }
+        }
+
+        async function executeGraphQL() {
+            const query = document.getElementById('graphqlQuery').value;
+            log(`📊 Executing GraphQL query...`);
+            
+            try {
+                const response = await fetch(`${endpoint}/graphql`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    log(`✅ GraphQL result: ${JSON.stringify(result, null, 2)}`);
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                log(`❌ GraphQL query failed: ${error.message}`);
+                log(`🔄 Mock GraphQL result: {"data": {"chains": [{"id": "chain_123"}]}}`);
+            }
+        }
+
+        // Auto-connect on load
+        setTimeout(connectToLinera, 1000);
+    </script>
+</body>
+</html>

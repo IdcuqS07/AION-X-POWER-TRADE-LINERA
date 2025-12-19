@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI POWER TRADE - Linera Demo</title>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { 
+            text-align: center; 
+            margin-bottom: 30px;
+            background: rgba(255,255,255,0.05);
+            padding: 25px;
+            border-radius: 15px;
+        }
+        .header h1 { 
+            font-size: 2.5em; 
+            background: linear-gradient(45deg, #00ff88, #00ccff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
+        .card { 
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(0,255,136,0.3);
+            border-radius: 15px;
+            padding: 20px;
+        }
+        .card h3 { 
+            color: #00ff88; 
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        .status { 
+            padding: 12px; 
+            margin: 12px 0; 
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+        .success { background: linear-gradient(45deg, #004d00, #006600); border: 1px solid #00ff88; }
+        .error { background: linear-gradient(45deg, #4d0000, #660000); border: 1px solid #ff4444; }
+        .info { background: linear-gradient(45deg, #003d4d, #004d66); border: 1px solid #0088ff; }
+        .warning { background: linear-gradient(45deg, #4d3d00, #665200); border: 1px solid #ffaa00; }
+        .wallet-info { 
+            background: rgba(0,255,136,0.1);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 12px 0;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+        .wallet-info div { margin: 5px 0; }
+        .wallet-info strong { color: #00ff88; }
+        .btn { 
+            background: linear-gradient(45deg, #00ff88, #00cc66);
+            color: #000; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            margin: 6px 4px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+        .btn:hover { transform: scale(1.05); transition: 0.2s; }
+        .btn:disabled { background: #666; cursor: not-allowed; opacity: 0.5; }
+        .btn-secondary { background: linear-gradient(45deg, #0088ff, #0066cc); }
+        .btn-danger { background: linear-gradient(45deg, #ff4444, #cc0000); }
+        .signal { 
+            background: rgba(0,136,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 3px solid #0088ff;
+        }
+        .signal-buy { border-left-color: #00ff88; background: rgba(0,255,136,0.1); }
+        .signal-sell { border-left-color: #ff4444; background: rgba(255,68,68,0.1); }
+        .code { 
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 0.85em;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 AI POWER TRADE</h1>
+            <p>Linera Blockchain Integration Demo</p>
+            <div id="global-status" class="status info">Ready to connect...</div>
+        </div>
+
+        <div class="grid">
+            <!-- Linera Connection Card -->
+            <div class="card">
+                <h3>⛓️ Linera Connection</h3>
+                <div id="connection-status" class="status info">
+                    <strong>Status:</strong> Not connected<br>
+                    <small>Click "Connect to Linera" to start</small>
+                </div>
+                
+                <div class="wallet-info" id="wallet-info" style="display: none;">
+                    <div><strong>Chain ID:</strong> <span id="chain-id">-</span></div>
+                    <div><strong>Owner:</strong> <span id="owner">-</span></div>
+                    <div><strong>Mode:</strong> <span id="mode">-</span></div>
+                </div>
+
+                <button class="btn" onclick="connectLinera()" id="btn-connect">Connect to Linera</button>
+                <button class="btn btn-secondary" onclick="showInfo()" id="btn-info">Show Info</button>
+                <button class="btn btn-danger" onclick="disconnect()">Disconnect</button>
+                
+                <div class="code" style="margin-top: 15px; display: none;" id="tech-info">
+                    <strong>Technical Info:</strong><br>
+                    <span id="tech-details">-</span>
+                </div>
+            </div>
+
+            <!-- AI Trading Signals Card -->
+            <div class="card">
+                <h3>🤖 AI Trading Signals</h3>
+                <div id="signals-container">
+                    <div class="status info">Connect to Linera to see AI signals</div>
+                </div>
+                <button class="btn" onclick="generateSignal()" id="btn-signal" disabled>Generate Signal</button>
+            </div>
+
+            <!-- Trading History Card -->
+            <div class="card">
+                <h3>📊 Trading History</h3>
+                <div id="history-container">
+                    <div class="status info">No trades yet</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Linera Configuration
+        const LINERA_CONFIG = {
+            faucetUrl: 'https://faucet.devnet.linera.io',
+            graphqlUrl: 'http://152.42.199.50/graphql',
+            mode: 'demo' // 'wasm', 'graphql', or 'demo'
+        };
+
+        // Global state
+        let lineraState = {
+            connected: false,
+            chainId: null,
+            owner: null,
+            mode: null
+        };
+
+        // Connect to Linera
+        async function connectLinera() {
+            updateStatus('🔄 Connecting to Linera...', 'info');
+            document.getElementById('btn-connect').disabled = true;
+            
+            try {
+                // Try WASM first (if available)
+                if (typeof window.linera !== 'undefined') {
+                    await connectViaWASM();
+                } else {
+                    // Fallback to GraphQL
+                    await connectViaGraphQL();
+                }
+            } catch (error) {
+                console.error('Connection error:', error);
+                // Final fallback to demo mode
+                connectDemoMode();
+            }
+            
+            document.getElementById('btn-connect').disabled = false;
+        }
+
+        // Connect via WASM (if library loaded)
+        async function connectViaWASM() {
+            updateStatus('🔄 Initializing Linera WASM...', 'info');
+            
+            // This would use @linera/client if loaded
+            // For now, fallback to GraphQL
+            throw new Error('WASM not available');
+        }
+
+        // Connect via GraphQL
+        async function connectViaGraphQL() {
+            updateStatus('🔄 Connecting via GraphQL...', 'info');
+            
+            try {
+                const response = await fetch(LINERA_CONFIG.graphqlUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: 'query { chains { list } }'
+                    })
+                });
+                
+                if (!response.ok) throw new Error('GraphQL not available');
+                
+                const data = await response.json();
+                const chainId = data.data?.chains?.list?.[0] || generateChainId();
+                const owner = generateOwnerId();
+                
+                lineraState = {
+                    connected: true,
+                    chainId: chainId,
+                    owner: owner,
+                    mode: 'graphql'
+                };
+                
+                localStorage.setItem('linera_state', JSON.stringify(lineraState));
+                displayConnection();
+                updateStatus('✅ Connected via GraphQL', 'success');
+                document.getElementById('btn-signal').disabled = false;
+                
+            } catch (error) {
+                console.log('GraphQL not available, will use demo mode');
+                throw error;
+            }
+        }
+
+        // Connect in demo mode
+        function connectDemoMode() {
+            console.log('🎮 Activating demo mode...');
+            updateStatus('🔄 Starting demo mode...', 'info');
+            
+            const chainId = generateChainId();
+            const owner = generateOwnerId();
+            
+            console.log('Generated Chain ID:', chainId);
+            console.log('Generated Owner:', owner);
+            
+            lineraState = {
+                connected: true,
+                chainId: chainId,
+                owner: owner,
+                mode: 'demo'
+            };
+            
+            localStorage.setItem('linera_state', JSON.stringify(lineraState));
+            displayConnection();
+            updateStatus('✅ Connected in demo mode', 'success');
+            document.getElementById('btn-signal').disabled = false;
+            
+            console.log('✅ Demo mode activated successfully');
+        }
+
+        // Display connection info
+        function displayConnection() {
+            document.getElementById('chain-id').textContent = lineraState.chainId.substring(0, 16) + '...';
+            document.getElementById('owner').textContent = lineraState.owner.substring(0, 16) + '...';
+            document.getElementById('mode').textContent = lineraState.mode.toUpperCase();
+            document.getElementById('wallet-info').style.display = 'block';
+            
+            const statusEl = document.getElementById('connection-status');
+            statusEl.innerHTML = `
+                <strong>Status:</strong> Connected ✅<br>
+                <small>Mode: ${lineraState.mode.toUpperCase()}</small>
+            `;
+            statusEl.className = 'status success';
+        }
+
+        // Show technical info
+        function showInfo() {
+            if (!lineraState.connected) {
+                alert('Not connected to Linera');
+                return;
+            }
+            
+            const techInfo = document.getElementById('tech-info');
+            const techDetails = document.getElementById('tech-details');
+            
+            techDetails.innerHTML = `
+                Chain ID: ${lineraState.chainId}<br>
+                Owner: ${lineraState.owner}<br>
+                Mode: ${lineraState.mode}<br>
+                Faucet: ${LINERA_CONFIG.faucetUrl}<br>
+                GraphQL: ${LINERA_CONFIG.graphqlUrl}
+            `;
+            
+            techInfo.style.display = 'block';
+        }
+
+        // Disconnect
+        function disconnect() {
+            if (confirm('Disconnect from Linera?')) {
+                localStorage.removeItem('linera_state');
+                lineraState = { connected: false, chainId: null, owner: null, mode: null };
+                document.getElementById('wallet-info').style.display = 'none';
+                document.getElementById('tech-info').style.display = 'none';
+                document.getElementById('btn-signal').disabled = true;
+                updateStatus('Disconnected', 'info');
+                
+                const statusEl = document.getElementById('connection-status');
+                statusEl.innerHTML = `
+                    <strong>Status:</strong> Not connected<br>
+                    <small>Click "Connect to Linera" to start</small>
+                `;
+                statusEl.className = 'status info';
+            }
+        }
+
+        // Generate AI trading signal
+        function generateSignal() {
+            if (!lineraState.connected) {
+                alert('Please connect to Linera first');
+                return;
+            }
+            
+            const signals = [
+                { type: 'BUY', pair: 'BTC/USD', price: 42500, confidence: 0.85, reason: 'Strong uptrend detected' },
+                { type: 'SELL', pair: 'ETH/USD', price: 2250, confidence: 0.78, reason: 'Resistance level reached' },
+                { type: 'BUY', pair: 'SOL/USD', price: 98, confidence: 0.92, reason: 'Breakout pattern forming' },
+                { type: 'BUY', pair: 'LINERA/USD', price: 1.25, confidence: 0.88, reason: 'New blockchain momentum' },
+            ];
+            
+            const signal = signals[Math.floor(Math.random() * signals.length)];
+            
+            const container = document.getElementById('signals-container');
+            const signalEl = document.createElement('div');
+            signalEl.className = 'signal signal-' + signal.type.toLowerCase();
+            signalEl.innerHTML = `
+                <strong>${signal.type} ${signal.pair}</strong><br>
+                Price: $${signal.price.toLocaleString()}<br>
+                Confidence: ${(signal.confidence * 100).toFixed(0)}%<br>
+                <small>${signal.reason}</small><br>
+                <small style="opacity: 0.7;">Chain: ${lineraState.chainId.substring(0, 8)}...</small>
+            `;
+            
+            container.innerHTML = '';
+            container.appendChild(signalEl);
+            
+            // Add to history
+            addToHistory(signal);
+        }
+
+        // Add to trading history
+        function addToHistory(signal) {
+            const container = document.getElementById('history-container');
+            const historyEl = document.createElement('div');
+            historyEl.className = 'signal signal-' + signal.type.toLowerCase();
+            historyEl.innerHTML = `
+                <small>${new Date().toLocaleTimeString()}</small><br>
+                <strong>${signal.type} ${signal.pair}</strong> @ $${signal.price.toLocaleString()}
+            `;
+            
+            if (container.querySelector('.status')) {
+                container.innerHTML = '';
+            }
+            
+            container.insertBefore(historyEl, container.firstChild);
+            
+            // Keep only last 5
+            while (container.children.length > 5) {
+                container.removeChild(container.lastChild);
+            }
+        }
+
+        // Helper: Generate chain ID
+        function generateChainId() {
+            const hex = '0123456789abcdef';
+            let id = '';
+            for (let i = 0; i < 64; i++) {
+                id += hex[Math.floor(Math.random() * 16)];
+            }
+            return id;
+        }
+
+        // Helper: Generate owner ID
+        function generateOwnerId() {
+            return 'owner_' + Math.random().toString(36).substring(2, 15) + 
+                   Math.random().toString(36).substring(2, 15);
+        }
+
+        // Helper: Update status
+        function updateStatus(message, type) {
+            const el = document.getElementById('global-status');
+            el.textContent = message;
+            el.className = 'status ' + type;
+        }
+
+        // Auto-restore connection on load
+        window.addEventListener('load', () => {
+            const saved = localStorage.getItem('linera_state');
+            if (saved) {
+                try {
+                    lineraState = JSON.parse(saved);
+                    if (lineraState.connected) {
+                        displayConnection();
+                        updateStatus('✅ Connection restored', 'success');
+                        document.getElementById('btn-signal').disabled = false;
+                    }
+                } catch (e) {
+                    console.error('Failed to restore state:', e);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
