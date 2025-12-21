@@ -900,6 +900,9 @@ async function connectPlatform() {
         elements.platformStatus.textContent = 'Connected';
         elements.platformStatus.style.color = '#00ff88';
         updateStatus(elements.globalStatus, `✅ Connected to ${platform.name}`, 'success');
+        
+        // Update portfolio to show current balance
+        await updatePortfolioStats();
     } catch (error) {
         elements.platformStatus.textContent = 'Connection Failed';
         elements.platformStatus.style.color = '#ff4444';
