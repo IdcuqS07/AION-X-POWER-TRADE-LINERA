@@ -1726,6 +1726,9 @@ async function claimFaucetTokens() {
         elements.faucetMessage.className = 'faucet-message success';
         elements.faucetMessage.style.display = 'block';
         
+        // Reset button state
+        elements.btnClaimFaucet.querySelector('.btn-text').textContent = 'Claim Test Tokens';
+        
         // Update status
         updateFaucetStatus();
         
@@ -1748,8 +1751,13 @@ async function claimFaucetTokens() {
         elements.faucetMessage.className = 'faucet-message error';
         elements.faucetMessage.style.display = 'block';
         
+        // Reset button state
         elements.btnClaimFaucet.disabled = false;
         elements.btnClaimFaucet.querySelector('.btn-text').textContent = 'Claim Test Tokens';
+        
+        // Reset status
+        elements.faucetStatusText.textContent = 'Available';
+        elements.faucetStatus.querySelector('.status-dot').className = 'status-dot available';
         
         console.error('❌ Faucet claim failed:', error);
         
