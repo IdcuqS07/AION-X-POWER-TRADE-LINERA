@@ -22,20 +22,19 @@
         <div class="container">
             <!-- Header -->
             <header class="header">
-                <div class="header-content">
-                    <div class="header-left">
-                        <h1>🚀 AI POWER TRADE</h1>
-                        <p>Powered by Linera Blockchain</p>
-                    </div>
-                    <div class="header-right">
-                        <button class="btn-connect-wallet" id="btn-connect-header">
-                            <span class="wallet-icon">💼</span>
-                            <span class="wallet-text" id="wallet-button-text">Connect Wallet</span>
-                        </button>
-                    </div>
+                <div class="header-left">
+                    <h1>AI Power Trade</h1>
+                    <p>Professional Trading Platform • Powered by Linera</p>
                 </div>
-                <div id="global-status" class="status info">Initializing...</div>
+                <div class="header-right">
+                    <button class="btn-connect" id="btn-connect-header">
+                        <span class="wallet-icon">💼</span>
+                        <span class="wallet-text" id="wallet-button-text">Connect Wallet</span>
+                    </button>
+                </div>
             </header>
+            
+            <div id="global-status" class="status info" style="margin-bottom: 20px;">Initializing...</div>
             
             <!-- Wallet Dropdown -->
             <div class="wallet-dropdown hidden" id="wallet-dropdown">
@@ -49,6 +48,12 @@
                         <p class="dropdown-description">Create a blockchain wallet to start trading</p>
                         <button class="dropdown-btn dropdown-btn-primary" id="dropdown-create-wallet">
                             Create New Wallet
+                        </button>
+                        <div class="dropdown-divider">
+                            <span>or</span>
+                        </div>
+                        <button class="dropdown-btn dropdown-btn-secondary" id="dropdown-import-wallet-notconnected">
+                            📥 Import Existing Wallet
                         </button>
                         <div class="dropdown-footer">
                             <span class="network-badge">🟢 Linera Testnet Conway</span>
@@ -85,6 +90,14 @@
                                 <span class="detail-value" id="dropdown-status">Connected</span>
                             </div>
                         </div>
+                        <div class="wallet-actions">
+                            <button class="dropdown-btn dropdown-btn-secondary" id="dropdown-export-wallet">
+                                📦 Export Wallet
+                            </button>
+                            <button class="dropdown-btn dropdown-btn-secondary" id="dropdown-import-wallet">
+                                📥 Import Wallet
+                            </button>
+                        </div>
                         <button class="dropdown-btn dropdown-btn-danger" id="dropdown-disconnect">
                             Disconnect
                         </button>
@@ -115,33 +128,17 @@
             </div>
 
             <!-- Main Grid -->
-            <div class="grid">
-                <!-- User Wallet Card -->
-                <div class="card">
-                    <h3>👤 User Wallet</h3>
-                    <div id="wallet-status" class="status info">Ready to connect...</div>
-                    
-                    <div class="wallet-info" id="wallet-info" style="display: none;">
-                        <div><strong>Chain ID:</strong> <span id="chain-id">-</span></div>
-                        <div><strong>Owner:</strong> <span id="owner">-</span></div>
-                        <div><strong>Status:</strong> <span id="wallet-state">-</span></div>
-                        <div><strong>Balance:</strong> <span id="wallet-balance">0 USDT</span></div>
-                    </div>
-
-                    <div class="button-group">
-                        <button class="btn" id="btn-create">Connect Wallet</button>
-                        <button class="btn btn-secondary" id="btn-info">Wallet Info</button>
-                        <button class="btn btn-danger" id="btn-reset">Reset</button>
-                    </div>
-                </div>
-
+            <div class="main-grid">
+                <!-- Left Column -->
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                
                 <!-- Portfolio Overview Card -->
                 <div class="card">
-                    <h3>💰 Portfolio Overview</h3>
+                    <h3 class="card-title">💰 Portfolio Overview</h3>
                     <div class="portfolio-grid">
                         <div class="portfolio-item">
                             <div class="portfolio-label">Total Value</div>
-                            <div class="portfolio-value price" id="total-value">$10,000</div>
+                            <div class="portfolio-value price" id="total-value">$0</div>
                         </div>
                         <div class="portfolio-item">
                             <div class="portfolio-label">P&L</div>
@@ -190,126 +187,130 @@
                         <div class="faucet-message" id="faucet-message" style="display: none;"></div>
                     </div>
                     
-                    <button class="btn" id="btn-refresh-portfolio">Refresh Portfolio</button>
+                    <button class="btn" id="btn-refresh-portfolio">📊 Refresh Portfolio</button>
                 </div>
 
                 <!-- Market Data Card -->
                 <div class="card">
-                    <h3>📊 Live Market Data</h3>
-                    <div id="market-prices">
+                    <h3 class="card-title">📊 Live Market Data</h3>
+                    <div id="market-prices" class="market-horizontal">
                         <div class="market-item">
-                            <span>BTC/USDT</span>
+                            <div class="market-coin">
+                                <span class="coin-symbol">₿</span>
+                                <span class="coin-pair">BTC/USDT</span>
+                            </div>
                             <div class="market-price-group">
                                 <div class="price" id="btc-price">$0</div>
                                 <div class="market-change" id="btc-change">+0%</div>
                             </div>
                         </div>
                         <div class="market-item">
-                            <span>ETH/USDT</span>
+                            <div class="market-coin">
+                                <span class="coin-symbol">Ξ</span>
+                                <span class="coin-pair">ETH/USDT</span>
+                            </div>
                             <div class="market-price-group">
                                 <div class="price" id="eth-price">$0</div>
                                 <div class="market-change" id="eth-change">+0%</div>
                             </div>
                         </div>
                         <div class="market-item">
-                            <span>SOL/USDT</span>
+                            <div class="market-coin">
+                                <span class="coin-symbol">◎</span>
+                                <span class="coin-pair">SOL/USDT</span>
+                            </div>
                             <div class="market-price-group">
                                 <div class="price" id="sol-price">$0</div>
                                 <div class="market-change" id="sol-change">+0%</div>
                             </div>
                         </div>
                         <div class="market-item">
-                            <span>BNB/USDT</span>
+                            <div class="market-coin">
+                                <span class="coin-symbol">◆</span>
+                                <span class="coin-pair">BNB/USDT</span>
+                            </div>
                             <div class="market-price-group">
                                 <div class="price" id="bnb-price">$0</div>
                                 <div class="market-change" id="bnb-change">+0%</div>
                             </div>
                         </div>
                     </div>
-                    <button class="btn" id="btn-update-market">Update Prices</button>
-                </div>
-
-                <!-- Trading Platform Card -->
-                <div class="card">
-                    <h3>🏦 Trading Platform</h3>
-                    <div class="platform-selector">
-                        <label>Select Your Trading Platform:</label>
-                        <select id="defi-platform">
-                            <optgroup label="🔗 Blockchain Native">
-                                <option value="linera">Linera Blockchain</option>
-                            </optgroup>
-                            <optgroup label="🏢 Centralized Exchanges (CEX)">
-                                <option value="binance">Binance</option>
-                                <option value="coinbase">Coinbase Pro</option>
-                                <option value="kraken">Kraken</option>
-                            </optgroup>
-                            <optgroup label="🔄 Decentralized Exchanges (DEX)">
-                                <option value="uniswap">Uniswap V3</option>
-                                <option value="pancakeswap">PancakeSwap</option>
-                                <option value="sushiswap">SushiSwap</option>
-                            </optgroup>
-                        </select>
-                    </div>
-                    <div class="platform-info">
-                        <div class="platform-detail">
-                            <span>📊 Platform:</span>
-                            <span id="platform-name">Linera Blockchain</span>
-                        </div>
-                        <div class="platform-detail">
-                            <span>🌐 Network:</span>
-                            <span id="platform-network">Linera Mainnet</span>
-                        </div>
-                        <div class="platform-detail">
-                            <span>💰 Trading Fees:</span>
-                            <span id="platform-fees">~0.01%</span>
-                        </div>
-                        <div class="platform-detail">
-                            <span>🔗 Status:</span>
-                            <span id="platform-status">Not Connected</span>
-                        </div>
-                    </div>
-                    <button class="btn" id="btn-connect-platform">🔗 Connect to Platform</button>
+                    <button class="btn" id="btn-update-market">🔄 Update Market Data</button>
                 </div>
 
                 <!-- AI Trading Signals Card -->
                 <div class="card">
-                    <h3>🧠 AI Trading Signal</h3>
-                    <div id="signals-container">
-                        <div class="signal signal-hold" id="current-signal">
-                            <div class="signal-header">
-                                <strong id="signal-action">ANALYZING...</strong>
-                                <span id="signal-confidence">0%</span>
-                            </div>
-                            <div class="signal-metric">
-                                <div class="metric-label">
-                                    <span>Confidence</span>
-                                    <span id="confidence-text">0%</span>
+                    <h3 class="card-title">🧠 AI Trading Signal</h3>
+                    
+                    <!-- Horizontal Layout: Signal Info + Controls -->
+                    <div class="signal-horizontal-layout" style="display: flex !important; gap: 20px !important;">
+                        <!-- Left: Signal Display -->
+                        <div class="signal-display-section">
+                            <div id="signals-container">
+                                <div class="signal signal-hold" id="current-signal">
+                                    <div class="signal-header">
+                                        <strong id="signal-action">ANALYZING...</strong>
+                                        <span id="signal-confidence">0%</span>
+                                    </div>
+                                    <div class="signal-metric">
+                                        <div class="metric-label">
+                                            <span>Confidence</span>
+                                            <span id="confidence-text">0%</span>
+                                        </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" id="confidence-bar" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="signal-metric">
+                                        <div class="metric-label">
+                                            <span>Risk Score</span>
+                                            <span id="risk-text">0/100</span>
+                                        </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill risk" id="risk-bar" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="signal-detail">
+                                        <span>Target Price</span>
+                                        <span id="target-price">$0</span>
+                                    </div>
                                 </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" id="confidence-bar" style="width: 0%"></div>
-                                </div>
-                            </div>
-                            <div class="signal-metric">
-                                <div class="metric-label">
-                                    <span>Risk Score</span>
-                                    <span id="risk-text">0/100</span>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill risk" id="risk-bar" style="width: 0%"></div>
-                                </div>
-                            </div>
-                            <div class="signal-detail">
-                                <span>Target Price</span>
-                                <span id="target-price">$0</span>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="coin-selector">
-                        <div class="coin-btn" data-coin="BTC">BTC</div>
-                        <div class="coin-btn" data-coin="ETH">ETH</div>
-                        <div class="coin-btn" data-coin="SOL">SOL</div>
-                        <div class="coin-btn active" data-coin="BNB">BNB</div>
+                        
+                        <!-- Right: Controls -->
+                        <div class="signal-controls-section">
+                            <div class="controls-label">Select Coin</div>
+                            <div class="coin-selector">
+                                <div class="coin-btn active" data-coin="BTC">
+                                    <span class="coin-icon">₿</span>
+                                    <span>BTC</span>
+                                </div>
+                                <div class="coin-btn" data-coin="ETH">
+                                    <span class="coin-icon">Ξ</span>
+                                    <span>ETH</span>
+                                </div>
+                                <div class="coin-btn" data-coin="SOL">
+                                    <span class="coin-icon">◎</span>
+                                    <span>SOL</span>
+                                </div>
+                                <div class="coin-btn" data-coin="BNB">
+                                    <span class="coin-icon">◆</span>
+                                    <span>BNB</span>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn btn-generate-signal" id="btn-signal" style="flex: 1;">
+                                    <span class="btn-icon">🎯</span>
+                                    <span>Generate Signal</span>
+                                </button>
+                                <a href="/ai-explainer.html" id="btn-ai-explainer" class="btn" style="flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                    <span class="btn-icon">🧠</span>
+                                    <span>AI Explainer</span>
+                                </a>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Trade Amount Percentage -->
@@ -396,14 +397,87 @@
                     </div>
 
                     <div class="button-group">
-                        <button class="btn" id="btn-signal">Generate New Signal</button>
                         <button class="btn btn-secondary" id="btn-execute" disabled>Execute AI Trade</button>
                     </div>
+                </div>
+                </div>
+                
+                <!-- Right Column -->
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                
+                <!-- User Wallet Card -->
+                <div class="card">
+                    <h3 class="card-title">👤 User Wallet</h3>
+                    <div id="wallet-status" class="status info">Ready to connect...</div>
+                    
+                    <div class="wallet-info" id="wallet-info" style="display: none;">
+                        <div><strong>Chain ID:</strong> <span id="chain-id">-</span></div>
+                        <div><strong>Owner:</strong> <span id="owner">-</span></div>
+                        <div><strong>Status:</strong> <span id="wallet-state">-</span></div>
+                        <div><strong>Balance:</strong> <span id="wallet-balance">0 USDT</span></div>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn" id="btn-create">Connect Wallet</button>
+                        <button class="btn btn-secondary" id="btn-info">Wallet Info</button>
+                        <button class="btn btn-danger" id="btn-reset">Reset</button>
+                    </div>
+                </div>
+
+                <!-- Trading History Card -->
+                <div class="card">
+                    <h3 class="card-title">📋 Recent Trades</h3>
+                    <div class="trade-history" id="history-container">
+                        <div class="status info">No trades yet. Execute your first trade!</div>
+                    </div>
+                    <button class="btn btn-danger" id="btn-clear-history">Clear History</button>
+                </div>
+
+                <!-- Trading Platform Card -->
+                <div class="card">
+                    <h3 class="card-title">🏦 Trading Platform</h3>
+                    <div class="platform-selector">
+                        <label>Select Your Trading Platform:</label>
+                        <select id="defi-platform">
+                            <optgroup label="🔗 Blockchain Native">
+                                <option value="linera">Linera Blockchain</option>
+                            </optgroup>
+                            <optgroup label="🏢 Centralized Exchanges (CEX)">
+                                <option value="binance">Binance</option>
+                                <option value="coinbase">Coinbase Pro</option>
+                                <option value="kraken">Kraken</option>
+                            </optgroup>
+                            <optgroup label="🔄 Decentralized Exchanges (DEX)">
+                                <option value="uniswap">Uniswap V3</option>
+                                <option value="pancakeswap">PancakeSwap</option>
+                                <option value="sushiswap">SushiSwap</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="platform-info">
+                        <div class="platform-detail">
+                            <span>📊 Platform:</span>
+                            <span id="platform-name">Linera Blockchain</span>
+                        </div>
+                        <div class="platform-detail">
+                            <span>🌐 Network:</span>
+                            <span id="platform-network">Linera Mainnet</span>
+                        </div>
+                        <div class="platform-detail">
+                            <span>💰 Trading Fees:</span>
+                            <span id="platform-fees">~0.01%</span>
+                        </div>
+                        <div class="platform-detail">
+                            <span>🔗 Status:</span>
+                            <span id="platform-status">Not Connected</span>
+                        </div>
+                    </div>
+                    <button class="btn" id="btn-connect-platform">🔗 Connect to Platform</button>
                 </div>
 
                 <!-- Linera Network Status Card -->
                 <div class="card">
-                    <h3>🔗 Linera Network</h3>
+                    <h3 class="card-title">🔗 Linera Network</h3>
                     <div class="network-stats">
                         <div class="network-stat">
                             <span>Network Status</span>
@@ -422,17 +496,89 @@
                             <span id="deployed-apps">5 Deployed</span>
                         </div>
                     </div>
-                    <button class="btn" id="btn-check-network">Check Status</button>
+                    <button class="btn" id="btn-check-network">🔍 Check Network Status</button>
                 </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                <!-- Trading History Card -->
-                <div class="card">
-                    <h3>📋 Recent Trades</h3>
-                    <div class="trade-history" id="history-container">
-                        <div class="status info">No trades yet. Execute your first trade!</div>
-                    </div>
-                    <button class="btn btn-danger" id="btn-clear-history">Clear History</button>
+    <!-- Mnemonic Backup Modal -->
+    <div class="modal-overlay hidden" id="mnemonic-modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>🔐 Backup Your Recovery Phrase</h3>
+                <button class="modal-close" id="mnemonic-modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="warning-box">
+                    <strong>⚠️ IMPORTANT:</strong> Write down these 12 words in order and store them safely. This is the ONLY way to recover your wallet if you lose access.
                 </div>
+                <div class="mnemonic-display" id="mnemonic-words">
+                    <!-- Mnemonic words will be inserted here -->
+                </div>
+                <div class="mnemonic-actions">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="mnemonic-confirmed">
+                        <span>I have written down my recovery phrase</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="mnemonic-copy-btn">📋 Copy to Clipboard</button>
+                <button class="btn" id="mnemonic-continue-btn" disabled>Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Wallet Modal -->
+    <div class="modal-overlay hidden" id="export-modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>📦 Export Wallet</h3>
+                <button class="modal-close" id="export-modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">Create an encrypted backup of your wallet. You'll need a password to protect this backup.</p>
+                <div class="input-group">
+                    <label>Backup Password</label>
+                    <input type="password" id="export-password" placeholder="Enter a strong password" />
+                </div>
+                <div class="input-group">
+                    <label>Confirm Password</label>
+                    <input type="password" id="export-password-confirm" placeholder="Re-enter password" />
+                </div>
+                <div class="export-message" id="export-message" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="export-cancel-btn">Cancel</button>
+                <button class="btn" id="export-confirm-btn">Export Wallet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Wallet Modal -->
+    <div class="modal-overlay hidden" id="import-modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>📥 Import Wallet</h3>
+                <button class="modal-close" id="import-modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">Restore your wallet from an encrypted backup file.</p>
+                <div class="input-group">
+                    <label>Backup File</label>
+                    <input type="file" id="import-file" accept=".json" />
+                </div>
+                <div class="input-group">
+                    <label>Backup Password</label>
+                    <input type="password" id="import-password" placeholder="Enter backup password" />
+                </div>
+                <div class="import-message" id="import-message" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="import-cancel-btn">Cancel</button>
+                <button class="btn" id="import-confirm-btn">Import Wallet</button>
             </div>
         </div>
     </div>

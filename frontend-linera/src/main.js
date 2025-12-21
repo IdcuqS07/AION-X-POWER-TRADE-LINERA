@@ -6,12 +6,18 @@ import LineraManager from './linera-wasm.js';
 import TradingManager from './trading.js';
 import FaucetManager from './faucet.js';
 import RiskManager from './risk-management.js';
+import AIExplainer from './ai-explainer.js';
+import { generateRealSignal } from './signal-real.js';
+import SignalCooldownManager from './signal-cooldown.js';
+import WalletManager from './wallet-manager.js';
 
 // Initialize managers
 const lineraManager = new LineraManager();
 const riskManager = new RiskManager();
 const tradingManager = new TradingManager();
 const faucetManager = new FaucetManager();
+const signalCooldown = new SignalCooldownManager();
+const walletManager = new WalletManager();
 
 // DOM Elements
 const elements = {
@@ -47,6 +53,33 @@ const elements = {
     loadingStep3: document.getElementById('loading-step-3'),
     copyChainIdBtn: document.getElementById('copy-chain-id'),
     copyOwnerBtn: document.getElementById('copy-owner'),
+    // Wallet management
+    dropdownExportWallet: document.getElementById('dropdown-export-wallet'),
+    dropdownImportWallet: document.getElementById('dropdown-import-wallet'),
+    dropdownImportWalletNotConnected: document.getElementById('dropdown-import-wallet-notconnected'),
+    // Mnemonic modal
+    mnemonicModalOverlay: document.getElementById('mnemonic-modal-overlay'),
+    mnemonicModalClose: document.getElementById('mnemonic-modal-close'),
+    mnemonicWords: document.getElementById('mnemonic-words'),
+    mnemonicConfirmed: document.getElementById('mnemonic-confirmed'),
+    mnemonicCopyBtn: document.getElementById('mnemonic-copy-btn'),
+    mnemonicContinueBtn: document.getElementById('mnemonic-continue-btn'),
+    // Export modal
+    exportModalOverlay: document.getElementById('export-modal-overlay'),
+    exportModalClose: document.getElementById('export-modal-close'),
+    exportPassword: document.getElementById('export-password'),
+    exportPasswordConfirm: document.getElementById('export-password-confirm'),
+    exportMessage: document.getElementById('export-message'),
+    exportCancelBtn: document.getElementById('export-cancel-btn'),
+    exportConfirmBtn: document.getElementById('export-confirm-btn'),
+    // Import modal
+    importModalOverlay: document.getElementById('import-modal-overlay'),
+    importModalClose: document.getElementById('import-modal-close'),
+    importFile: document.getElementById('import-file'),
+    importPassword: document.getElementById('import-password'),
+    importMessage: document.getElementById('import-message'),
+    importCancelBtn: document.getElementById('import-cancel-btn'),
+    importConfirmBtn: document.getElementById('import-confirm-btn'),
     // Market data
     btcPrice: document.getElementById('btc-price'),
     btcChange: document.getElementById('btc-change'),
@@ -115,7 +148,7 @@ let fullChainId = '';
 let fullOwner = '';
 
 // App state
-let selectedCoin = 'BNB';
+let selectedCoin = 'BTC';
 let selectedPlatform = 'linera';
 let currentSignal = null;
 let tradePercentage = 25; // Default 25%
@@ -140,21 +173,29 @@ const LINERA_TO_USD = 1.5;
  */
 async function queryBlockchainBalance() {
     try {
-        if (!lineraManager.isConnected()) {
+        // Get wallet info first
+        const info = lineraManager.getWalletInfo();
+        
+        if (!info.chainId || !info.owner) {
             console.log('Wallet not connected, using default balance');
             return 0;
         }
 
-        // Get balance from Linera blockchain
+        // Get balance from Linera blockchain (per wallet)
         // TODO: Query actual balance from blockchain via GraphQL
-        // For now, simulate with localStorage tracking
-        const storedBalance = localStorage.getItem('lineraBalance');
+        // For now, simulate with localStorage tracking per owner address
+        const balanceKey = `lineraBalance_${info.owner}`;
+        const storedBalance = localStorage.getItem(balanceKey);
         const lineraBalance = storedBalance ? parseFloat(storedBalance) : 0;
         
         // Convert LINERA to USD
         const usdBalance = lineraBalance * LINERA_TO_USD;
         
-        console.log(`💰 Balance: ${lineraBalance} LINERA = $${usdBalance.toFixed(2)} USD`);
+        console.log(`💰 Balance query for ${info.owner.substring(0, 10)}...:`);
+        console.log(`   Key: ${balanceKey}`);
+        console.log(`   Stored: ${storedBalance}`);
+        console.log(`   LINERA: ${lineraBalance}`);
+        console.log(`   USD: $${usdBalance.toFixed(2)}`);
         
         return usdBalance;
     } catch (error) {
@@ -167,10 +208,18 @@ async function queryBlockchainBalance() {
  * Update balance in localStorage (simulating blockchain state)
  */
 function updateBlockchainBalance(amount) {
-    const currentBalance = parseFloat(localStorage.getItem('lineraBalance') || '0');
+    const info = lineraManager.getWalletInfo();
+    
+    if (!info.owner) {
+        console.error('Cannot update balance: no wallet connected');
+        return 0;
+    }
+    
+    const balanceKey = `lineraBalance_${info.owner}`;
+    const currentBalance = parseFloat(localStorage.getItem(balanceKey) || '0');
     const newBalance = currentBalance + amount;
-    localStorage.setItem('lineraBalance', newBalance.toString());
-    console.log(`💰 Balance updated: ${currentBalance} → ${newBalance} LINERA`);
+    localStorage.setItem(balanceKey, newBalance.toString());
+    console.log(`💰 Balance updated for ${info.owner.substring(0, 10)}...: ${currentBalance} → ${newBalance} LINERA`);
     return newBalance;
 }
 let marketData = {
@@ -237,23 +286,73 @@ function updateStatus(element, message, type = 'info') {
  * Copy to clipboard
  */
 async function copyToClipboard(text, button) {
+    console.log('📋 Attempting to copy:', text ? text.substring(0, 20) + '...' : 'EMPTY TEXT');
+    
+    if (!text) {
+        console.error('❌ Cannot copy: text is empty');
+        alert('Nothing to copy');
+        return;
+    }
+    
+    // Try modern clipboard API first
+    if (navigator.clipboard && window.isSecureContext) {
+        try {
+            await navigator.clipboard.writeText(text);
+            showCopySuccess(button);
+            console.log('✅ Copied using Clipboard API');
+            return;
+        } catch (err) {
+            console.warn('⚠️ Clipboard API failed, trying fallback:', err);
+        }
+    }
+    
+    // Fallback method for HTTP sites
     try {
-        await navigator.clipboard.writeText(text);
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.top = '0';
+        textarea.style.left = '0';
+        textarea.style.width = '2em';
+        textarea.style.height = '2em';
+        textarea.style.padding = '0';
+        textarea.style.border = 'none';
+        textarea.style.outline = 'none';
+        textarea.style.boxShadow = 'none';
+        textarea.style.background = 'transparent';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
         
-        // Visual feedback
-        const originalIcon = button.querySelector('.copy-icon').textContent;
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        
+        if (successful) {
+            showCopySuccess(button);
+            console.log('✅ Copied using execCommand fallback');
+        } else {
+            throw new Error('execCommand returned false');
+        }
+    } catch (fallbackErr) {
+        console.error('❌ All copy methods failed:', fallbackErr);
+        alert('Failed to copy. Please copy manually:\n\n' + text);
+    }
+}
+
+/**
+ * Show copy success feedback
+ */
+function showCopySuccess(button) {
+    const copyIcon = button.querySelector('.copy-icon');
+    if (copyIcon) {
+        const originalIcon = copyIcon.textContent;
         button.classList.add('copied');
-        button.querySelector('.copy-icon').textContent = '✓';
+        copyIcon.textContent = '✓';
         
         setTimeout(() => {
             button.classList.remove('copied');
-            button.querySelector('.copy-icon').textContent = originalIcon;
+            copyIcon.textContent = originalIcon;
         }, 2000);
-        
-        console.log('✅ Copied to clipboard:', text.substring(0, 20) + '...');
-    } catch (err) {
-        console.error('❌ Failed to copy:', err);
-        alert('Failed to copy to clipboard');
     }
 }
 
@@ -342,6 +441,11 @@ async function createWalletFromDropdown() {
         fullChainId = walletInfo.chainId;
         fullOwner = walletInfo.owner;
         
+        console.log('💾 Stored for copying:', {
+            fullChainId: fullChainId,
+            fullOwner: fullOwner
+        });
+        
         // Update dropdown with wallet info
         elements.dropdownChainId.textContent = walletInfo.chainId.substring(0, 16) + '...';
         elements.dropdownOwner.textContent = walletInfo.owner.substring(0, 16) + '...';
@@ -362,10 +466,12 @@ async function createWalletFromDropdown() {
             // Show connected state
             setTimeout(() => {
                 showDropdownSection('connected');
-                // Auto-hide dropdown after 2 seconds
+                // Auto-hide dropdown after 1 second, then show mnemonic
                 setTimeout(() => {
                     hideDropdown();
-                }, 2000);
+                    // Show mnemonic backup modal
+                    showMnemonicModal();
+                }, 1000);
             }, 500);
         }).catch((err) => {
             console.warn('⚠️ Client connection failed (UI still works):', err.message);
@@ -376,7 +482,9 @@ async function createWalletFromDropdown() {
                 showDropdownSection('connected');
                 setTimeout(() => {
                     hideDropdown();
-                }, 2000);
+                    // Show mnemonic backup modal
+                    showMnemonicModal();
+                }, 1000);
             }, 500);
         });
         
@@ -556,6 +664,9 @@ async function initApp() {
                 // Update faucet status
                 updateFaucetStatus();
                 
+                // Update portfolio with balance
+                await updatePortfolioStats();
+                
                 // Update header button
                 elements.btnConnectHeader.classList.add('connected');
                 elements.walletButtonText.textContent = savedChainId.substring(0, 8) + '...';
@@ -569,6 +680,48 @@ async function initApp() {
                 elements.dropdownOwner.textContent = savedOwner.substring(0, 16) + '...';
                 elements.dropdownStatus.textContent = 'Connected';
                 showDropdownSection('connected');
+                
+                // Update signal container to show wallet is connected
+                elements.signalsContainer.innerHTML = `
+                    <div class="signal signal-hold" id="current-signal">
+                        <div class="signal-header">
+                            <strong id="signal-action">Ready</strong>
+                            <span id="signal-confidence">-</span>
+                        </div>
+                        <div class="signal-metric">
+                            <div class="metric-label">
+                                <span>Confidence</span>
+                                <span id="confidence-text">-</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="confidence-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="signal-metric">
+                            <div class="metric-label">
+                                <span>Risk Score</span>
+                                <span id="risk-text">-</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill risk" id="risk-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="signal-detail">
+                            <span>Target Price</span>
+                            <span id="target-price">-</span>
+                        </div>
+                    </div>
+                `;
+                
+                // Re-bind element references after innerHTML update
+                elements.currentSignal = document.getElementById('current-signal');
+                elements.signalAction = document.getElementById('signal-action');
+                elements.signalConfidence = document.getElementById('signal-confidence');
+                elements.confidenceText = document.getElementById('confidence-text');
+                elements.confidenceBar = document.getElementById('confidence-bar');
+                elements.riskText = document.getElementById('risk-text');
+                elements.riskBar = document.getElementById('risk-bar');
+                elements.targetPrice = document.getElementById('target-price');
                 
                 console.log('✅ Wallet restored successfully');
                 
@@ -617,6 +770,11 @@ elements.copyChainIdBtn.addEventListener('click', (e) => {
 
 elements.copyOwnerBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    console.log('🔍 Copy Owner clicked, fullOwner:', fullOwner);
+    if (!fullOwner) {
+        alert('Owner address not available');
+        return;
+    }
     copyToClipboard(fullOwner, elements.copyOwnerBtn);
 });
 
@@ -639,6 +797,7 @@ import { aiTradingContract } from './ai-trading-contract.js';
 
 // Initialize additional managers
 const marketManager = new MarketManager();
+const aiExplainer = new AIExplainer(marketManager);
 const platformManager = new PlatformManager();
 
 // Contract integration flag
@@ -737,17 +896,28 @@ function selectCoin(event) {
     
     selectedCoin = coin;
     
-    // Update UI
+    // Update UI - FAST, no heavy operations
     document.querySelectorAll('.coin-btn').forEach(btn => {
         btn.classList.remove('active');
     });
     event.target.classList.add('active');
     
+    // Update AI Explainer link with selected coin
+    updateAIExplainerLink();
+    
     console.log('💰 Selected coin:', coin);
     
-    // Auto-generate signal for new coin
-    if (lineraManager.getWalletInfo().chainId) {
-        generateSignalEnhanced();
+    // Don't auto-generate - let user click "Generate Signal" button
+    // This makes coin selection instant and responsive
+}
+
+/**
+ * Update AI Explainer link with current coin
+ */
+function updateAIExplainerLink() {
+    const explainerBtn = document.getElementById('btn-ai-explainer');
+    if (explainerBtn) {
+        explainerBtn.href = `/ai-explainer.html?coin=${selectedCoin}`;
     }
 }
 
@@ -762,6 +932,13 @@ function generateSignalEnhanced() {
         return;
     }
     
+    // Check cooldown (15 minutes)
+    if (!signalCooldown.canGenerate(selectedCoin)) {
+        const remaining = signalCooldown.getRemainingTimeFormatted(selectedCoin);
+        alert(`⏱️ Please wait ${remaining} before generating a new signal for ${selectedCoin}\n\nSignals update every 15 minutes for accuracy.`);
+        return;
+    }
+    
     updateStatus(elements.globalStatus, `🧠 AI analyzing ${selectedCoin}...`, 'info');
     
     // Get current price
@@ -771,23 +948,15 @@ function generateSignalEnhanced() {
         return;
     }
     
-    // Generate AI signal
-    const signals = ['BUY', 'SELL', 'HOLD'];
-    const signal = signals[Math.floor(Math.random() * signals.length)];
-    const confidence = Math.random() * 0.4 + 0.6; // 60-100%
-    const riskScore = Math.floor(Math.random() * 60) + 20; // 20-80
-    const targetPrice = currentPrice * (1 + (Math.random() - 0.5) * 0.1);
+    // Generate REAL AI signal using technical analysis
+    currentSignal = generateRealSignal(selectedCoin, currentPrice, aiExplainer, info);
+    const signal = currentSignal.signal;
+    const confidence = currentSignal.confidence;
+    const riskScore = currentSignal.riskScore;
+    const targetPrice = currentSignal.targetPrice;
     
-    currentSignal = {
-        coin: selectedCoin,
-        signal: signal,
-        confidence: confidence,
-        riskScore: riskScore,
-        targetPrice: targetPrice,
-        currentPrice: currentPrice,
-        timestamp: new Date(),
-        chainId: info.chainId
-    };
+    // Save signal with cooldown
+    signalCooldown.saveSignal(selectedCoin, currentSignal);
     
     // Update UI
     elements.currentSignal.className = `signal signal-${signal.toLowerCase()}`;
@@ -804,8 +973,38 @@ function generateSignalEnhanced() {
     const tradeAmount = (portfolio.totalValue * tradePercentage) / 100;
     elements.btnExecute.textContent = `Execute ${signal} ${selectedCoin} (${tradePercentage}% - $${tradeAmount.toFixed(0)})`;
     
-    updateStatus(elements.globalStatus, `✅ AI Signal: ${signal} ${selectedCoin}`, 'success');
-    console.log('🧠 Signal generated:', currentSignal);
+    // Show risk management section
+    console.log('🎯 Showing Risk Management section');
+    elements.riskManagement.style.display = 'block';
+    console.log('🎯 Risk Management display:', elements.riskManagement.style.display);
+    
+    // Calculate and populate AI suggestions for stop loss and take profit
+    const aiSuggestion = riskManager.calculateAISuggestion(
+        currentPrice,
+        confidence,
+        signal
+    );
+    
+    // Populate fields with AI suggestions
+    elements.takeProfitPrice.value = aiSuggestion.takeProfit;
+    elements.takeProfitPercent.value = aiSuggestion.takeProfitPercent;
+    elements.stopLossPrice.value = aiSuggestion.stopLoss;
+    elements.stopLossPercent.value = aiSuggestion.stopLossPercent;
+    elements.riskRatio.textContent = `R:R ${aiSuggestion.riskRewardRatio}:1`;
+    
+    // Update profit/loss display
+    updateProfitLossDisplay();
+    
+    updateStatus(elements.globalStatus, `✅ AI Signal: ${signal} ${selectedCoin} | TP: +${aiSuggestion.takeProfitPercent}% | SL: -${aiSuggestion.stopLossPercent}%`, 'success');
+    console.log('🧠 Signal generated with REAL ANALYSIS:', currentSignal);
+    console.log('🎯 Risk Management:', aiSuggestion);
+    if (currentSignal.analysis) {
+        console.log('📊 RSI:', currentSignal.analysis.rsi);
+        console.log('📈 MACD:', currentSignal.analysis.macd);
+        console.log('📉 MA:', currentSignal.analysis.ma);
+        console.log('📊 BB:', currentSignal.analysis.bb);
+        console.log('💡 Reasoning:', currentSignal.analysis.reasoning);
+    }
 }
 
 /**
@@ -877,14 +1076,27 @@ async function updatePortfolioStats() {
     portfolio.winRate = portfolio.totalTrades > 0 ? 
         Math.round((winningTrades / portfolio.totalTrades) * 100) : 0;
     
-    elements.totalValue.textContent = `$${portfolio.totalValue.toFixed(2)}`;
-    elements.totalValue.textContent = `$${portfolio.totalValue.toFixed(0)}`;
-    elements.pnl.textContent = `${portfolio.pnl >= 0 ? '+' : ''}$${portfolio.pnl.toFixed(0)}`;
+    elements.totalValue.textContent = `$${portfolio.totalValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+    elements.pnl.textContent = `${portfolio.pnl >= 0 ? '+' : ''}$${Math.abs(portfolio.pnl).toFixed(0)}`;
     elements.pnl.style.color = portfolio.pnl >= 0 ? '#00ff88' : '#ff4444';
     elements.winRate.textContent = `${portfolio.winRate}%`;
     elements.totalTrades.textContent = portfolio.totalTrades;
     
-    console.log('💰 Portfolio updated:', portfolio);
+    // Update wallet balance display in User Wallet card
+    if (elements.walletBalance) {
+        const lineraBalance = realBalance / LINERA_TO_USD;
+        elements.walletBalance.textContent = `${lineraBalance.toFixed(2)} LINERA (~$${realBalance.toFixed(2)})`;
+    }
+    
+    console.log('💰 Portfolio updated:', {
+        totalValue: `$${portfolio.totalValue.toFixed(2)}`,
+        pnl: `$${portfolio.pnl.toFixed(2)}`,
+        winRate: `${portfolio.winRate}%`,
+        totalTrades: portfolio.totalTrades
+    });
+    
+    // Update trade amount display after portfolio is updated
+    updateTradeAmount();
 }
 
 /**
@@ -952,42 +1164,80 @@ document.querySelectorAll('.coin-btn').forEach(btn => {
     btn.addEventListener('click', selectCoin);
 });
 
-// Trade percentage slider
+// Trade percentage slider - OPTIMIZED for smooth performance
+let sliderTimeout;
 elements.tradePercentageSlider.addEventListener('input', (e) => {
     tradePercentage = parseInt(e.target.value);
-    updateTradeAmount();
-    updateProfitLossDisplay(); // Update risk management display
+    updateTradeAmount(); // Update display immediately (lightweight)
+    
+    // Debounce heavy calculation
+    clearTimeout(sliderTimeout);
+    sliderTimeout = setTimeout(() => {
+        updateProfitLossDisplay(); // Update risk management (heavy, debounced)
+    }, 100);
 });
 
 // Risk Management Event Listeners
 
 // AI Suggest Take Profit
 elements.btnAiTp.addEventListener('click', () => {
-    if (!currentSignal) return;
+    if (!currentSignal) {
+        console.warn('⚠️ No current signal for AI TP suggestion');
+        return;
+    }
+    
+    // Use correct property names (price or currentPrice, type or signal)
+    const entryPrice = currentSignal.price || currentSignal.currentPrice;
+    const signalType = currentSignal.type || currentSignal.signal;
+    
+    console.log('🎯 AI TP Suggestion - Signal data:', {
+        price: entryPrice,
+        confidence: currentSignal.confidence,
+        type: signalType
+    });
     
     const aiSuggestion = riskManager.calculateAISuggestion(
-        currentSignal.price,
+        entryPrice,
         currentSignal.confidence,
-        currentSignal.type
+        signalType
     );
+    
+    console.log('✅ AI TP Suggestion:', aiSuggestion);
     
     elements.takeProfitPrice.value = aiSuggestion.takeProfit;
     elements.takeProfitPercent.value = aiSuggestion.takeProfitPercent;
+    elements.riskRatio.textContent = `R:R ${aiSuggestion.riskRewardRatio}:1`;
     updateProfitLossDisplay();
 });
 
 // AI Suggest Stop Loss
 elements.btnAiSl.addEventListener('click', () => {
-    if (!currentSignal) return;
+    if (!currentSignal) {
+        console.warn('⚠️ No current signal for AI SL suggestion');
+        return;
+    }
+    
+    // Use correct property names (price or currentPrice, type or signal)
+    const entryPrice = currentSignal.price || currentSignal.currentPrice;
+    const signalType = currentSignal.type || currentSignal.signal;
+    
+    console.log('🎯 AI SL Suggestion - Signal data:', {
+        price: entryPrice,
+        confidence: currentSignal.confidence,
+        type: signalType
+    });
     
     const aiSuggestion = riskManager.calculateAISuggestion(
-        currentSignal.price,
+        entryPrice,
         currentSignal.confidence,
-        currentSignal.type
+        signalType
     );
+    
+    console.log('✅ AI SL Suggestion:', aiSuggestion);
     
     elements.stopLossPrice.value = aiSuggestion.stopLoss;
     elements.stopLossPercent.value = aiSuggestion.stopLossPercent;
+    elements.riskRatio.textContent = `R:R ${aiSuggestion.riskRewardRatio}:1`;
     updateProfitLossDisplay();
 });
 
@@ -998,10 +1248,13 @@ elements.takeProfitPrice.addEventListener('input', (e) => {
     const price = parseFloat(e.target.value);
     if (isNaN(price)) return;
     
+    const entryPrice = currentSignal.price || currentSignal.currentPrice;
+    const signalType = currentSignal.type || currentSignal.signal;
+    
     const percent = riskManager.calculatePercentFromPrice(
-        currentSignal.price,
+        entryPrice,
         price,
-        currentSignal.type
+        signalType
     );
     
     elements.takeProfitPercent.value = Math.abs(percent).toFixed(2);
@@ -1015,10 +1268,13 @@ elements.takeProfitPercent.addEventListener('input', (e) => {
     const percent = parseFloat(e.target.value);
     if (isNaN(percent)) return;
     
+    const entryPrice = currentSignal.price || currentSignal.currentPrice;
+    const signalType = currentSignal.type || currentSignal.signal;
+    
     const price = riskManager.calculatePriceFromPercent(
-        currentSignal.price,
+        entryPrice,
         percent,
-        currentSignal.type
+        signalType
     );
     
     elements.takeProfitPrice.value = price.toFixed(2);
@@ -1032,10 +1288,13 @@ elements.stopLossPrice.addEventListener('input', (e) => {
     const price = parseFloat(e.target.value);
     if (isNaN(price)) return;
     
+    const entryPrice = currentSignal.price || currentSignal.currentPrice;
+    const signalType = currentSignal.type || currentSignal.signal;
+    
     const percent = riskManager.calculatePercentFromPrice(
-        currentSignal.price,
+        entryPrice,
         price,
-        currentSignal.type
+        signalType
     );
     
     elements.stopLossPercent.value = Math.abs(percent).toFixed(2);
@@ -1049,10 +1308,13 @@ elements.stopLossPercent.addEventListener('input', (e) => {
     const percent = parseFloat(e.target.value);
     if (isNaN(percent)) return;
     
+    const entryPrice = currentSignal.price || currentSignal.currentPrice;
+    const signalType = currentSignal.type || currentSignal.signal;
+    
     const price = riskManager.calculatePriceFromPercent(
-        currentSignal.price,
+        entryPrice,
         -percent, // Negative for stop loss
-        currentSignal.type
+        signalType
     );
     
     elements.stopLossPrice.value = price.toFixed(2);
@@ -1184,10 +1446,30 @@ function updateTradeAmount() {
 elements.btnSignal.removeEventListener('click', generateSignal);
 elements.btnSignal.addEventListener('click', generateSignalEnhanced);
 
+// Initialize portfolio display immediately with 0 values
+updateTradeAmount(); // Show $0 trade amount initially
+
+// Update signal button state based on cooldown
+function updateSignalButtonState() {
+    if (!signalCooldown.canGenerate(selectedCoin)) {
+        const remaining = signalCooldown.getRemainingTimeFormatted(selectedCoin);
+        elements.btnSignal.disabled = true;
+        elements.btnSignal.textContent = `Next signal in: ${remaining}`;
+    } else {
+        elements.btnSignal.disabled = false;
+        elements.btnSignal.textContent = 'Generate Signal';
+    }
+}
+
+// Update button state every second
+setInterval(updateSignalButtonState, 1000);
+updateSignalButtonState(); // Initial update
+
 // Auto-load market data on init
 setTimeout(() => {
     updateMarketData();
     updatePortfolioStats();
+    updateAIExplainerLink(); // Set initial AI Explainer link
 }, 2000);
 
 // Auto-update market data every 30 seconds
@@ -1198,20 +1480,39 @@ setInterval(updateMarketData, 30000);
  * Update profit/loss display for risk management
  */
 function updateProfitLossDisplay() {
-    if (!currentSignal) return;
+    console.log('💰 updateProfitLossDisplay called');
+    
+    if (!currentSignal) {
+        console.log('⚠️ updateProfitLossDisplay: No current signal');
+        return;
+    }
     
     // Ensure portfolio has valid value
     const portfolioValue = portfolio.totalValue || 0;
+    console.log('💰 Portfolio Value:', portfolioValue);
+    
     if (portfolioValue === 0) {
+        console.warn('⚠️ updateProfitLossDisplay: Portfolio value is 0');
         elements.tpProfit.textContent = '$0.00';
         elements.slLoss.textContent = '$0.00';
         return;
     }
     
     const tradeAmount = (portfolioValue * tradePercentage) / 100;
-    const entryPrice = currentSignal.price;
+    const entryPrice = currentSignal.price || currentSignal.currentPrice;
+    const signalType = currentSignal.type || currentSignal.signal;
     const tpPrice = parseFloat(elements.takeProfitPrice.value);
     const slPrice = parseFloat(elements.stopLossPrice.value);
+    
+    console.log('💰 Risk Display Update:', {
+        portfolioValue,
+        tradePercentage,
+        tradeAmount,
+        entryPrice,
+        signalType,
+        tpPrice,
+        slPrice
+    });
     
     // Calculate coin amount from USD
     const coinAmount = tradeAmount / entryPrice;
@@ -1222,9 +1523,9 @@ function updateProfitLossDisplay() {
             entryPrice,
             tpPrice,
             coinAmount,
-            currentSignal.type
+            signalType
         );
-        elements.tpProfit.textContent = `$${Math.abs(tpProfit).toFixed(2)}`;
+        elements.tpProfit.textContent = `+$${Math.abs(tpProfit).toFixed(2)}`;
     }
     
     // Update Stop Loss display
@@ -1233,9 +1534,9 @@ function updateProfitLossDisplay() {
             entryPrice,
             slPrice,
             coinAmount,
-            currentSignal.type
+            signalType
         );
-        elements.slLoss.textContent = `$${Math.abs(slLoss).toFixed(2)}`;
+        elements.slLoss.textContent = `-$${Math.abs(slLoss).toFixed(2)}`;
     }
     
     // Update risk/reward ratio
@@ -1268,6 +1569,13 @@ generateSignalEnhanced = function() {
         return;
     }
     
+    // Check cooldown (15 minutes)
+    if (!signalCooldown.canGenerate(selectedCoin)) {
+        const remaining = signalCooldown.getRemainingTimeFormatted(selectedCoin);
+        alert(`⏱️ Please wait ${remaining} before generating a new signal for ${selectedCoin}\n\nSignals update every 15 minutes for accuracy.`);
+        return;
+    }
+    
     updateStatus(elements.globalStatus, `🧠 AI analyzing ${selectedCoin}...`, 'info');
     
     // Get current price
@@ -1277,25 +1585,15 @@ generateSignalEnhanced = function() {
         return;
     }
     
-    // Generate AI signal
-    const signals = ['BUY', 'SELL', 'HOLD'];
-    const signal = signals[Math.floor(Math.random() * signals.length)];
-    const confidence = Math.random() * 0.4 + 0.6; // 60-100%
-    const riskScore = Math.floor(Math.random() * 60) + 20; // 20-80
-    const targetPrice = currentPrice * (1 + (Math.random() - 0.5) * 0.1);
+    // Generate REAL AI signal using technical analysis
+    currentSignal = generateRealSignal(selectedCoin, currentPrice, aiExplainer, info);
+    const signal = currentSignal.signal;
+    const confidence = currentSignal.confidence;
+    const riskScore = currentSignal.riskScore;
+    const targetPrice = currentSignal.targetPrice;
     
-    currentSignal = {
-        coin: selectedCoin,
-        signal: signal,
-        type: signal, // Add type for risk manager
-        price: currentPrice, // Add price for risk manager
-        confidence: confidence,
-        riskScore: riskScore,
-        targetPrice: targetPrice,
-        currentPrice: currentPrice,
-        timestamp: new Date(),
-        chainId: info.chainId
-    };
+    // Save signal with cooldown
+    signalCooldown.saveSignal(selectedCoin, currentSignal);
     
     // Update UI
     elements.currentSignal.className = `signal signal-${signal.toLowerCase()}`;
@@ -1313,7 +1611,9 @@ generateSignalEnhanced = function() {
     elements.btnExecute.textContent = `Execute ${signal} ${selectedCoin} (${tradePercentage}% - $${tradeAmount.toFixed(0)})`;
     
     // Show risk management section
+    console.log('🎯 Showing Risk Management section');
     elements.riskManagement.style.display = 'block';
+    console.log('🎯 Risk Management display:', elements.riskManagement.style.display);
     
     // Calculate and populate AI suggestions for stop loss and take profit
     const aiSuggestion = riskManager.calculateAISuggestion(
@@ -1333,7 +1633,14 @@ generateSignalEnhanced = function() {
     updateProfitLossDisplay();
     
     updateStatus(elements.globalStatus, `✅ AI Signal: ${signal} ${selectedCoin} | TP: +${aiSuggestion.takeProfitPercent}% | SL: -${aiSuggestion.stopLossPercent}%`, 'success');
-    console.log('🧠 Signal generated:', currentSignal);
+    console.log('🧠 Signal generated with REAL ANALYSIS:', currentSignal);
+    if (currentSignal.analysis) {
+        console.log('📊 RSI:', currentSignal.analysis.rsi);
+        console.log('📈 MACD:', currentSignal.analysis.macd);
+        console.log('📉 MA:', currentSignal.analysis.ma);
+        console.log('📊 BB:', currentSignal.analysis.bb);
+        console.log('💡 Reasoning:', currentSignal.analysis.reasoning);
+    }
     console.log('🎯 Risk Management:', aiSuggestion);
 };
 
@@ -1442,3 +1749,279 @@ executeAITrade = function() {
 };
 
 console.log('✅ Risk Management Integration loaded');
+
+
+// ============================================
+// Wallet Management - Mnemonic, Export, Import
+// ============================================
+
+/**
+ * Show mnemonic backup modal
+ */
+function showMnemonicModal() {
+    const mnemonic = walletManager.getMnemonic();
+    
+    if (!mnemonic) {
+        alert('No mnemonic found');
+        return;
+    }
+    
+    // Split mnemonic into words
+    const words = mnemonic.split(' ');
+    
+    // Create mnemonic grid
+    const mnemonicGrid = document.createElement('div');
+    mnemonicGrid.className = 'mnemonic-grid';
+    
+    words.forEach((word, index) => {
+        const wordElement = document.createElement('div');
+        wordElement.className = 'mnemonic-word';
+        wordElement.innerHTML = `
+            <span class="mnemonic-word-number">${index + 1}.</span>
+            <span class="mnemonic-word-text">${word}</span>
+        `;
+        mnemonicGrid.appendChild(wordElement);
+    });
+    
+    elements.mnemonicWords.innerHTML = '';
+    elements.mnemonicWords.appendChild(mnemonicGrid);
+    
+    // Reset checkbox
+    elements.mnemonicConfirmed.checked = false;
+    elements.mnemonicContinueBtn.disabled = true;
+    
+    // Show modal
+    elements.mnemonicModalOverlay.classList.remove('hidden');
+}
+
+/**
+ * Hide mnemonic modal
+ */
+function hideMnemonicModal() {
+    elements.mnemonicModalOverlay.classList.add('hidden');
+}
+
+/**
+ * Copy mnemonic to clipboard
+ */
+async function copyMnemonic() {
+    const mnemonic = walletManager.getMnemonic();
+    
+    if (!mnemonic) {
+        alert('No mnemonic found');
+        return;
+    }
+    
+    try {
+        await navigator.clipboard.writeText(mnemonic);
+        elements.mnemonicCopyBtn.textContent = '✓ Copied!';
+        setTimeout(() => {
+            elements.mnemonicCopyBtn.textContent = '📋 Copy to Clipboard';
+        }, 2000);
+    } catch (error) {
+        console.error('Failed to copy:', error);
+        alert('Failed to copy to clipboard');
+    }
+}
+
+/**
+ * Show export wallet modal
+ */
+function showExportModal() {
+    elements.exportPassword.value = '';
+    elements.exportPasswordConfirm.value = '';
+    elements.exportMessage.style.display = 'none';
+    elements.exportModalOverlay.classList.remove('hidden');
+}
+
+/**
+ * Hide export modal
+ */
+function hideExportModal() {
+    elements.exportModalOverlay.classList.add('hidden');
+}
+
+/**
+ * Export wallet
+ */
+async function exportWallet() {
+    const password = elements.exportPassword.value;
+    const confirmPassword = elements.exportPasswordConfirm.value;
+    
+    // Validate
+    if (!password) {
+        elements.exportMessage.textContent = 'Please enter a password';
+        elements.exportMessage.className = 'export-message error';
+        elements.exportMessage.style.display = 'block';
+        return;
+    }
+    
+    if (password.length < 8) {
+        elements.exportMessage.textContent = 'Password must be at least 8 characters';
+        elements.exportMessage.className = 'export-message error';
+        elements.exportMessage.style.display = 'block';
+        return;
+    }
+    
+    if (password !== confirmPassword) {
+        elements.exportMessage.textContent = 'Passwords do not match';
+        elements.exportMessage.className = 'export-message error';
+        elements.exportMessage.style.display = 'block';
+        return;
+    }
+    
+    try {
+        // Export wallet
+        const exportData = await walletManager.exportWallet(password);
+        
+        // Download file
+        const filename = walletManager.generateBackupFilename();
+        walletManager.downloadFile(exportData, filename);
+        
+        // Show success
+        elements.exportMessage.textContent = `✅ Wallet exported successfully as ${filename}`;
+        elements.exportMessage.className = 'export-message success';
+        elements.exportMessage.style.display = 'block';
+        
+        console.log('✅ Wallet exported:', filename);
+        
+        // Close modal after 2 seconds
+        setTimeout(() => {
+            hideExportModal();
+        }, 2000);
+        
+    } catch (error) {
+        console.error('Export failed:', error);
+        elements.exportMessage.textContent = `❌ Export failed: ${error.message}`;
+        elements.exportMessage.className = 'export-message error';
+        elements.exportMessage.style.display = 'block';
+    }
+}
+
+/**
+ * Show import wallet modal
+ */
+function showImportModal() {
+    elements.importFile.value = '';
+    elements.importPassword.value = '';
+    elements.importMessage.style.display = 'none';
+    elements.importModalOverlay.classList.remove('hidden');
+}
+
+/**
+ * Hide import modal
+ */
+function hideImportModal() {
+    elements.importModalOverlay.classList.add('hidden');
+}
+
+/**
+ * Import wallet
+ */
+async function importWallet() {
+    const file = elements.importFile.files[0];
+    const password = elements.importPassword.value;
+    
+    // Validate
+    if (!file) {
+        elements.importMessage.textContent = 'Please select a backup file';
+        elements.importMessage.className = 'import-message error';
+        elements.importMessage.style.display = 'block';
+        return;
+    }
+    
+    if (!password) {
+        elements.importMessage.textContent = 'Please enter the backup password';
+        elements.importMessage.className = 'import-message error';
+        elements.importMessage.style.display = 'block';
+        return;
+    }
+    
+    try {
+        // Read file
+        const fileContent = await file.text();
+        
+        // Import wallet
+        const walletData = await walletManager.importWallet(fileContent, password);
+        
+        // Show success
+        elements.importMessage.textContent = '✅ Wallet imported successfully! Reloading...';
+        elements.importMessage.className = 'import-message success';
+        elements.importMessage.style.display = 'block';
+        
+        console.log('✅ Wallet imported:', walletData);
+        
+        // Verify data is saved to localStorage
+        const savedMnemonic = localStorage.getItem('linera_mnemonic');
+        const savedChainId = localStorage.getItem('linera_chain_id');
+        const savedOwner = localStorage.getItem('linera_owner');
+        
+        console.log('🔍 Verifying saved data:');
+        console.log('   Mnemonic:', savedMnemonic ? 'Found' : 'Missing');
+        console.log('   Chain ID:', savedChainId);
+        console.log('   Owner:', savedOwner);
+        
+        if (!savedMnemonic || !savedChainId || !savedOwner) {
+            throw new Error('Failed to save wallet data to localStorage');
+        }
+        
+        // Wait a bit longer to ensure localStorage is fully written
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Reload page to initialize with new wallet
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
+        
+    } catch (error) {
+        console.error('Import failed:', error);
+        elements.importMessage.textContent = `❌ Import failed: ${error.message}`;
+        elements.importMessage.className = 'import-message error';
+        elements.importMessage.style.display = 'block';
+    }
+}
+
+// Mnemonic modal event listeners
+elements.mnemonicModalClose.addEventListener('click', hideMnemonicModal);
+elements.mnemonicModalOverlay.addEventListener('click', (e) => {
+    if (e.target === elements.mnemonicModalOverlay) {
+        hideMnemonicModal();
+    }
+});
+elements.mnemonicConfirmed.addEventListener('change', (e) => {
+    elements.mnemonicContinueBtn.disabled = !e.target.checked;
+});
+elements.mnemonicCopyBtn.addEventListener('click', copyMnemonic);
+elements.mnemonicContinueBtn.addEventListener('click', hideMnemonicModal);
+
+// Export modal event listeners
+elements.dropdownExportWallet.addEventListener('click', () => {
+    hideDropdown();
+    showExportModal();
+});
+elements.exportModalClose.addEventListener('click', hideExportModal);
+elements.exportModalOverlay.addEventListener('click', (e) => {
+    if (e.target === elements.exportModalOverlay) {
+        hideExportModal();
+    }
+});
+elements.exportCancelBtn.addEventListener('click', hideExportModal);
+elements.exportConfirmBtn.addEventListener('click', exportWallet);
+
+// Import modal event listeners
+elements.dropdownImportWallet.addEventListener('click', () => {
+    hideDropdown();
+    showImportModal();
+});
+elements.dropdownImportWalletNotConnected.addEventListener('click', () => {
+    hideDropdown();
+    showImportModal();
+});
+elements.importModalClose.addEventListener('click', hideImportModal);
+elements.importModalOverlay.addEventListener('click', (e) => {
+    if (e.target === elements.importModalOverlay) {
+        hideImportModal();
+    }
+});
+elements.importCancelBtn.addEventListener('click', hideImportModal);
+elements.importConfirmBtn.addEventListener('click', importWallet);
