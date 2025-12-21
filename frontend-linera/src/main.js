@@ -897,6 +897,33 @@ function selectCoin(event) {
     const coin = event.target.dataset.coin;
     if (!coin) return;
     
+    // Check if there's an active signal
+    const persistedSignal = signalPersistence.getActiveSignal();
+    
+    // Special case: Clicking the same coin as active signal
+    if (persistedSignal && persistedSignal.coin === coin) {
+        console.log('🔄 Returning to signal coin:', coin);
+        selectedCoin = coin;
+        
+        // Update active state
+        document.querySelectorAll('.coin-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+        
+        // Restore full signal display
+        activeSignal = persistedSignal;
+        displayActiveSignal();
+        
+        // Update AI Explainer link
+        updateAIExplainerLink();
+        
+        // Update visual indicators
+        updateCoinButtonIndicators();
+        
+        return;
+    }
+    
     selectedCoin = coin;
     
     // Update UI - FAST, no heavy operations
@@ -911,11 +938,15 @@ function selectCoin(event) {
     console.log('💰 Selected coin:', coin);
     
     // Check if there's an active signal (persistent across coin changes)
-    if (activeSignal) {
-        console.log('📊 Active signal exists for:', activeSignal.coin);
+    if (persistedSignal) {
+        console.log('📊 Active signal exists for:', persistedSignal.coin);
+        activeSignal = persistedSignal;
         // Keep showing the active signal even if different coin selected
         displayActiveSignal();
     }
+    
+    // Update visual indicators for signal coin
+    updateCoinButtonIndicators();
     
     // Don't auto-generate - let user click "Generate Signal" button
     // This makes coin selection instant and responsive
@@ -928,6 +959,28 @@ function updateAIExplainerLink() {
     const explainerBtn = document.getElementById('btn-ai-explainer');
     if (explainerBtn) {
         explainerBtn.href = `/ai-explainer.html?coin=${selectedCoin}`;
+    }
+}
+
+/**
+ * Update coin button visual indicators
+ * Highlights the coin that has an active signal
+ */
+function updateCoinButtonIndicators() {
+    const persistedSignal = signalPersistence.getActiveSignal();
+    
+    // Remove all signal indicators
+    document.querySelectorAll('.coin-btn').forEach(btn => {
+        btn.classList.remove('has-active-signal');
+    });
+    
+    // Add indicator to coin with active signal
+    if (persistedSignal) {
+        const signalCoinBtn = document.querySelector(`.coin-btn[data-coin="${persistedSignal.coin}"]`);
+        if (signalCoinBtn) {
+            signalCoinBtn.classList.add('has-active-signal');
+            console.log(`✨ Highlighted ${persistedSignal.coin} button with active signal`);
+        }
     }
 }
 
@@ -1063,6 +1116,9 @@ function generateSignalEnhanced() {
     // Update profit/loss display
     updateProfitLossDisplay();
     
+    // Update visual indicators for signal coin
+    updateCoinButtonIndicators();
+    
     updateStatus(elements.globalStatus, `✅ AI Signal: ${signal} ${selectedCoin} | TP: +${aiSuggestion.takeProfitPercent}% | SL: -${aiSuggestion.stopLossPercent}%`, 'success');
     console.log('🧠 Signal generated with REAL ANALYSIS:', currentSignal);
     console.log('🎯 Risk Management:', aiSuggestion);
@@ -1115,6 +1171,17 @@ function executeAITrade() {
     
     updateStatus(elements.globalStatus, `✅ Trade executed: ${trade.type} ${trade.coin} (${tradePercentage}% - $${tradeAmount.toFixed(0)})`, 'success');
     console.log('⚡ Trade executed:', trade);
+    
+    // Clear active signal after execution
+    signalPersistence.clearActiveSignal();
+    activeSignal = null;
+    currentSignal = null;
+    
+    // Hide risk management section
+    elements.riskManagement.style.display = 'none';
+    
+    // Update visual indicators (remove highlight)
+    updateCoinButtonIndicators();
     
     // Disable execute button until new signal
     elements.btnExecute.disabled = true;
@@ -1810,6 +1877,17 @@ executeAITrade = function() {
     
     updateStatus(elements.globalStatus, `✅ Trade executed: ${trade.type} ${trade.coin} (${tradePercentage}% - $${tradeAmount.toFixed(0)}) | Monitoring active`, 'success');
     console.log('⚡ Trade executed:', trade);
+    
+    // Clear active signal after execution
+    signalPersistence.clearActiveSignal();
+    activeSignal = null;
+    currentSignal = null;
+    
+    // Hide risk management section
+    elements.riskManagement.style.display = 'none';
+    
+    // Update visual indicators (remove highlight)
+    updateCoinButtonIndicators();
     
     // Disable execute button until new signal
     elements.btnExecute.disabled = true;

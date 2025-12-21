@@ -367,6 +367,49 @@
             color: white;
         }
 
+        /* Coin button with active signal - visual indicator */
+        .coin-btn.has-active-signal {
+            position: relative;
+            border: 2px solid #2962FF;
+            box-shadow: 0 0 12px rgba(41, 98, 255, 0.4);
+            animation: pulse-signal 2s ease-in-out infinite;
+        }
+
+        .coin-btn.has-active-signal::after {
+            content: '●';
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            color: #00ff88;
+            font-size: 12px;
+            animation: blink 1.5s ease-in-out infinite;
+        }
+
+        /* Active + has signal = stronger highlight */
+        .coin-btn.active.has-active-signal {
+            background: #2962FF;
+            border-color: #00ff88;
+            box-shadow: 0 0 16px rgba(0, 255, 136, 0.5);
+        }
+
+        @keyframes pulse-signal {
+            0%, 100% {
+                box-shadow: 0 0 12px rgba(41, 98, 255, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(41, 98, 255, 0.6);
+            }
+        }
+
+        @keyframes blink {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.3;
+            }
+        }
+
         .btn {
             background: #2962FF;
             color: white;
