@@ -684,8 +684,14 @@ async function initApp() {
                 // Update faucet status
                 updateFaucetStatus();
                 
-                // Update portfolio with balance
+                // Update portfolio with balance (with delay to ensure data is ready)
                 await updatePortfolioStats();
+                
+                // Force another update after a short delay to ensure balance is loaded
+                setTimeout(async () => {
+                    await updatePortfolioStats();
+                    console.log('🔄 Portfolio refreshed after wallet restore');
+                }, 500);
                 
                 // Update header button
                 elements.btnConnectHeader.classList.add('connected');
