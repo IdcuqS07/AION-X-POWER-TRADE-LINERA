@@ -386,10 +386,20 @@ class LineraManager {
     reset() {
         console.log('🔄 Resetting wallet...');
         
+        // Get owner before removing to preserve balance reference
+        const owner = localStorage.getItem('linera_owner');
+        if (owner) {
+            console.log(`📝 Preserving balance for owner: ${owner.substring(0, 16)}...`);
+            // Balance key will remain in localStorage: lineraBalance_<owner>
+        }
+        
         localStorage.removeItem('linera_mnemonic');
         localStorage.removeItem('linera_owner');
         localStorage.removeItem('linera_chain_id');
         localStorage.removeItem('linera_network');
+        
+        // Note: We intentionally DO NOT remove lineraBalance_* keys
+        // so balance persists across disconnect/reconnect
         
         if (this.client) {
             try {
@@ -406,7 +416,7 @@ class LineraManager {
         this.signer = null;
         this.publicKey = null;
         
-        console.log('✅ Wallet reset complete');
+        console.log('✅ Wallet reset complete (balance preserved)');
     }
 }
 

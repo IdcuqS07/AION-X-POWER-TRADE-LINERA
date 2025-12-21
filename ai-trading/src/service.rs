@@ -2,21 +2,19 @@
 
 mod state;
 
-use ai_trading::TradingAbi;
-use async_graphql::{EmptyMutation, EmptySubscription, Object, Request, Response, Schema};
+use ai_trading::{SimpleQuery, SimpleResponse, TradingAbi};
 use linera_sdk::{
     linera_base_types::WithServiceAbi,
     views::View,
     Service, ServiceRuntime,
 };
-use std::sync::Arc;
 
 use self::state::TradingState;
 
 linera_sdk::service!(TradingService);
 
 pub struct TradingService {
-    state: Arc<TradingState>,
+    state: TradingState,
 }
 
 impl WithServiceAbi for TradingService {
@@ -30,31 +28,11 @@ impl Service for TradingService {
         let state = TradingState::load(runtime.root_view_storage_context())
             .await
             .expect("Failed to load state");
-        TradingService {
-            state: Arc::new(state),
-        }
+        TradingService { state }
     }
 
-    async fn handle_query(&self, request: Request) -> Response {
-        let schema = Schema::build(
-            QueryRoot {
-                state: self.state.clone(),
-            },
-            EmptyMutation,
-            EmptySubscription,
-        )
-        .finish();
-        schema.execute(request).await
-    }
-}
-
-struct QueryRoot {
-    state: Arc<TradingState>,
-}
-
-#[Object]
-impl QueryRoot {
-    async fn trade_count(&self) -> u64 {
-        *self.state.trade_count.get()
+    async fn handle_query(&self, query: SimpleQuery) -> SimpleResponse {
+        let result = *self.state.trade_count.get() + query.value;
+        SimpleResponse { result }
     }
 }

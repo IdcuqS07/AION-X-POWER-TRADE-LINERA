@@ -217,6 +217,17 @@ async function queryBlockchainBalance() {
         console.log(`   LINERA: ${lineraBalance}`);
         console.log(`   USD: $${usdBalance.toFixed(2)}`);
         
+        // Debug: List all balance keys in localStorage
+        const allBalanceKeys = Object.keys(localStorage).filter(k => k.startsWith('lineraBalance_'));
+        if (allBalanceKeys.length > 0) {
+            console.log(`   📋 All balance keys in localStorage:`, allBalanceKeys);
+            allBalanceKeys.forEach(key => {
+                console.log(`      ${key}: ${localStorage.getItem(key)} LINERA`);
+            });
+        } else {
+            console.log(`   ⚠️ No balance keys found in localStorage!`);
+        }
+        
         return usdBalance;
     } catch (error) {
         console.error('Error querying balance:', error);
@@ -1744,9 +1755,11 @@ async function claimFaucetTokens() {
         }, 5000);
         
         console.log('✅ Faucet claim successful:', result);
+        console.log('💰 Faucet amount received:', result.amount, 'LINERA');
         
         // Update blockchain balance
-        updateBlockchainBalance(result.amount);
+        const newBalance = updateBlockchainBalance(result.amount);
+        console.log('💾 New balance saved:', newBalance, 'LINERA');
         
         // Refresh portfolio to show new balance
         await updatePortfolioStats();

@@ -6,9 +6,10 @@ edition = "2021"
 [workspace]
 
 [dependencies]
-async-graphql = { version = "=7.0.17", default-features = false }
 linera-sdk = { path = "../linera-protocol/linera-sdk" }
 serde = { version = "1.0", features = ["derive"] }
+# Temporarily remove async-graphql to test WASM compatibility
+# async-graphql = { version = "=7.0.17", default-features = false }
 
 [[bin]]
 name = "ai_trading_contract"
