@@ -642,6 +642,26 @@
         </div>
     </div>
 
+    <!-- Binance Execution Status Overlay -->
+    <div class="modal-overlay hidden" id="binance-execution-overlay">
+        <div class="binance-execution-card">
+            <div class="binance-header">
+                <div class="binance-logo-large">🟡</div>
+                <h3>Executing on Binance</h3>
+                <p class="binance-subtitle">CEX • High Liquidity • 0.1% Fee</p>
+            </div>
+            <div class="execution-status-content">
+                <div class="status-message" id="binance-status-message">
+                    Placing order...
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="binance-progress-fill"></div>
+                </div>
+                <div class="status-spinner"></div>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="/src/main.js"></script>
 </body>
 </html>

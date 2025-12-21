@@ -11,6 +11,7 @@ import { generateRealSignal } from './signal-real.js';
 import SignalCooldownManager from './signal-cooldown.js';
 import WalletManager from './wallet-manager.js';
 import SignalPersistenceManager from './signal-persistence.js';
+import { binanceSimulation } from './binance-simulation.js';
 
 // Initialize managers
 const lineraManager = new LineraManager();
@@ -154,7 +155,11 @@ const elements = {
     confirmStopLoss: document.getElementById('confirm-stop-loss'),
     confirmTakeProfit: document.getElementById('confirm-take-profit'),
     tradeConfirmCancelBtn: document.getElementById('trade-confirm-cancel-btn'),
-    tradeConfirmExecuteBtn: document.getElementById('trade-confirm-execute-btn')
+    tradeConfirmExecuteBtn: document.getElementById('trade-confirm-execute-btn'),
+    // Binance Execution Overlay
+    binanceExecutionOverlay: document.getElementById('binance-execution-overlay'),
+    binanceStatusMessage: document.getElementById('binance-status-message'),
+    binanceProgressFill: document.getElementById('binance-progress-fill')
 };
 
 // Store full values for copying
@@ -1242,60 +1247,100 @@ function getSignalColor(signal) {
 /**
  * Execute trade after confirmation
  */
-function executeTradeConfirmed() {
+async function executeTradeConfirmed() {
     if (!currentSignal) {
         alert('No signal to execute');
         return;
     }
     
-    // Hide modal
+    // Hide confirmation modal
     elements.tradeConfirmModalOverlay.classList.add('hidden');
     
     // Calculate trade amount based on percentage
     const tradeAmount = (portfolio.totalValue * tradePercentage) / 100;
     
-    updateStatus(elements.globalStatus, `⚡ Executing ${tradePercentage}% trade (${tradeAmount.toFixed(0)})...`, 'info');
+    // Show Binance execution overlay
+    elements.binanceExecutionOverlay.classList.remove('hidden');
     
-    // Create trade record
-    const trade = {
-        id: Date.now(),
-        coin: currentSignal.coin,
-        type: currentSignal.signal,
-        amount: tradeAmount,
-        percentage: tradePercentage,
-        price: currentSignal.targetPrice,
-        confidence: currentSignal.confidence,
-        timestamp: new Date(),
-        chainId: currentSignal.chainId
-    };
-    
-    // Add to trading manager
-    tradingManager.addToHistory({
-        ...trade,
-        pair: `${trade.coin}/USD`,
-        executedAt: trade.timestamp.toLocaleTimeString()
-    });
-    
-    // Update displays
-    updateHistoryEnhanced();
-    updatePortfolioStats();
-    
-    updateStatus(elements.globalStatus, `✅ Trade executed: ${trade.type} ${trade.coin} (${tradePercentage}% - ${tradeAmount.toFixed(0)})`, 'success');
-    console.log('⚡ Trade executed:', trade);
-    
-    // Clear active signal after execution
-    // Signal cleared (stored per-coin in signalCooldown)
-    activeSignal = null;
-    currentSignal = null;
-    
-    // Hide risk management section
-    elements.riskManagement.style.display = 'none';
-    
-    // Update visual indicators (remove highlight)
-    updateCoinButtonIndicators();
-    
-    // Disable execute button until new signal
-    elements.btnExecute.disabled = true;
+    try {
+        // Execute with Binance simulation
+        const execution = await binanceSimulation.executeOrder(
+            currentSignal,
+            tradeAmount,
+            {
+                onStatus: (message, progress) => {
+                    elements.binanceStatusMessage.textContent = message;
+                    elements.binanceProgressFill.style.width = progress + '%';
+                },
+                onComplete: (result) => {
+                    console.log('✅ Binance execution complete:', result);
+                }
+            }
+        );
+        
+        // Hide execution overlay
+        elements.binanceExecutionOverlay.classList.add('hidden');
+        
+        // Create enhanced trade record with Binance execution details
+        const trade = {
+            id: Date.now(),
+            coin: currentSignal.coin,
+            type: currentSignal.signal,
+            amount: tradeAmount,
+            percentage: tradePercentage,
+            price: execution.executionPrice, // Use actual execution price
+            confidence: currentSignal.confidence,
+            timestamp: new Date(),
+            chainId: currentSignal.chainId,
+            // Binance execution details
+            platform: execution.platform,
+            platformType: execution.platformType,
+            fee: execution.fee,
+            feePercent: execution.feePercent,
+            slippage: execution.slippagePercent,
+            executionTime: execution.executionTime,
+            coinAmount: execution.coinAmount,
+            netAmount: execution.netAmount
+        };
+        
+        // Add to trading manager
+        tradingManager.addToHistory({
+            ...trade,
+            pair: `${trade.coin}/USD`,
+            executedAt: trade.timestamp.toLocaleTimeString()
+        });
+        
+        // Update displays
+        updateHistoryEnhanced();
+        updatePortfolioStats();
+        
+        // Show success message with execution details
+        updateStatus(
+            elements.globalStatus, 
+            `✅ Trade executed on Binance: ${trade.type} ${trade.coin} @ $${execution.executionPrice.toFixed(2)} (${execution.executionTime}s)`, 
+            'success'
+        );
+        
+        console.log('⚡ Trade executed with Binance simulation:', trade);
+        
+        // Clear active signal after execution
+        activeSignal = null;
+        currentSignal = null;
+        
+        // Hide risk management section
+        elements.riskManagement.style.display = 'none';
+        
+        // Update visual indicators (remove highlight)
+        updateCoinButtonIndicators();
+        
+        // Disable execute button until new signal
+        elements.btnExecute.disabled = true;
+        
+    } catch (error) {
+        console.error('Trade execution failed:', error);
+        elements.binanceExecutionOverlay.classList.add('hidden');
+        updateStatus(elements.globalStatus, `❌ Trade execution failed: ${error.message}`, 'error');
+    }
 }
 
 /**
@@ -1366,20 +1411,39 @@ function updateHistoryEnhanced() {
         return;
     }
     
-    elements.historyContainer.innerHTML = history.map(item => `
-        <div class="trade-item ${item.type}">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <strong>${item.type} ${item.pair}</strong>
-                    <div style="font-size: 0.8em; color: #aaa; margin-top: 4px;">${item.executedAt}</div>
+    elements.historyContainer.innerHTML = history.map(item => {
+        // Check if trade has Binance execution details
+        const hasBinanceDetails = item.platform && item.fee !== undefined;
+        
+        return `
+            <div class="trade-item ${item.type}">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>${item.type} ${item.pair}</strong>
+                        ${hasBinanceDetails ? `
+                            <span class="platform-badge binance">
+                                <span class="binance-icon">🟡</span>
+                                ${item.platform}
+                            </span>
+                        ` : ''}
+                        <div style="font-size: 0.8em; color: #aaa; margin-top: 4px;">${item.executedAt}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div>$${item.price.toFixed(2)}</div>
+                        <div style="font-size: 0.8em; color: #aaa;">${(item.confidence * 100).toFixed(0)}%</div>
+                    </div>
                 </div>
-                <div style="text-align: right;">
-                    <div>$${item.price.toFixed(2)}</div>
-                    <div style="font-size: 0.8em; color: #aaa;">${(item.confidence * 100).toFixed(0)}%</div>
-                </div>
+                ${hasBinanceDetails ? `
+                    <div class="trade-execution-details">
+                        <div class="trade-detail-item">Amount: <span>${item.coinAmount ? item.coinAmount.toFixed(5) : '-'} ${item.coin}</span></div>
+                        <div class="trade-detail-item">Fee: <span>$${item.fee.toFixed(2)} (${item.feePercent}%)</span></div>
+                        <div class="trade-detail-item">Slippage: <span>${item.slippage}%</span></div>
+                        <div class="trade-detail-item">Execution: <span class="trade-detail-highlight">${item.executionTime}s</span></div>
+                    </div>
+                ` : ''}
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 /**
