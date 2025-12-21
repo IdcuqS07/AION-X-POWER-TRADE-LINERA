@@ -8,12 +8,14 @@ import FaucetManager from './faucet.js';
 import RiskManager from './risk-management.js';
 import AIExplainer from './ai-explainer.js';
 import { generateRealSignal } from './signal-real.js';
+import SignalCooldownManager from './signal-cooldown.js';
 
 // Initialize managers
 const lineraManager = new LineraManager();
 const riskManager = new RiskManager();
 const tradingManager = new TradingManager();
 const faucetManager = new FaucetManager();
+const signalCooldown = new SignalCooldownManager();
 
 // DOM Elements
 const elements = {
@@ -867,10 +869,23 @@ function selectCoin(event) {
     });
     event.target.classList.add('active');
     
+    // Update AI Explainer link with selected coin
+    updateAIExplainerLink();
+    
     console.log('💰 Selected coin:', coin);
     
     // Don't auto-generate - let user click "Generate Signal" button
     // This makes coin selection instant and responsive
+}
+
+/**
+ * Update AI Explainer link with current coin
+ */
+function updateAIExplainerLink() {
+    const explainerBtn = document.getElementById('btn-ai-explainer');
+    if (explainerBtn) {
+        explainerBtn.href = `/ai-explainer.html?coin=${selectedCoin}`;
+    }
 }
 
 /**
@@ -884,6 +899,13 @@ function generateSignalEnhanced() {
         return;
     }
     
+    // Check cooldown (15 minutes)
+    if (!signalCooldown.canGenerate(selectedCoin)) {
+        const remaining = signalCooldown.getRemainingTimeFormatted(selectedCoin);
+        alert(`⏱️ Please wait ${remaining} before generating a new signal for ${selectedCoin}\n\nSignals update every 15 minutes for accuracy.`);
+        return;
+    }
+    
     updateStatus(elements.globalStatus, `🧠 AI analyzing ${selectedCoin}...`, 'info');
     
     // Get current price
@@ -893,25 +915,15 @@ function generateSignalEnhanced() {
         return;
     }
     
-    // Generate AI signal
-    const signals = ['BUY', 'SELL', 'HOLD'];
-    const signal = signals[Math.floor(Math.random() * signals.length)];
-    const confidence = Math.random() * 0.4 + 0.6; // 60-100%
-    const riskScore = Math.floor(Math.random() * 60) + 20; // 20-80
-    const targetPrice = currentPrice * (1 + (Math.random() - 0.5) * 0.1);
+    // Generate REAL AI signal using technical analysis
+    currentSignal = generateRealSignal(selectedCoin, currentPrice, aiExplainer, info);
+    const signal = currentSignal.signal;
+    const confidence = currentSignal.confidence;
+    const riskScore = currentSignal.riskScore;
+    const targetPrice = currentSignal.targetPrice;
     
-    currentSignal = {
-        coin: selectedCoin,
-        signal: signal,
-        type: signal, // Add type for risk manager
-        price: currentPrice, // Add price for risk manager
-        confidence: confidence,
-        riskScore: riskScore,
-        targetPrice: targetPrice,
-        currentPrice: currentPrice,
-        timestamp: new Date(),
-        chainId: info.chainId
-    };
+    // Save signal with cooldown
+    signalCooldown.saveSignal(selectedCoin, currentSignal);
     
     // Update UI
     elements.currentSignal.className = `signal signal-${signal.toLowerCase()}`;
@@ -928,8 +940,32 @@ function generateSignalEnhanced() {
     const tradeAmount = (portfolio.totalValue * tradePercentage) / 100;
     elements.btnExecute.textContent = `Execute ${signal} ${selectedCoin} (${tradePercentage}% - $${tradeAmount.toFixed(0)})`;
     
-    updateStatus(elements.globalStatus, `✅ AI Signal: ${signal} ${selectedCoin}`, 'success');
+    // Show risk management section
+    console.log('🎯 Showing Risk Management section');
+    alert("DEBUG: About to show Risk Management");
+    elements.riskManagement.style.display = 'block';
+    console.log('🎯 Risk Management display:', elements.riskManagement.style.display);
+    
+    // Calculate and populate AI suggestions for stop loss and take profit
+    const aiSuggestion = riskManager.calculateAISuggestion(
+        currentPrice,
+        confidence,
+        signal
+    );
+    
+    // Populate fields with AI suggestions
+    elements.takeProfitPrice.value = aiSuggestion.takeProfit;
+    elements.takeProfitPercent.value = aiSuggestion.takeProfitPercent;
+    elements.stopLossPrice.value = aiSuggestion.stopLoss;
+    elements.stopLossPercent.value = aiSuggestion.stopLossPercent;
+    elements.riskRatio.textContent = `R:R ${aiSuggestion.riskRewardRatio}:1`;
+    
+    // Update profit/loss display
+    updateProfitLossDisplay();
+    
+    updateStatus(elements.globalStatus, `✅ AI Signal: ${signal} ${selectedCoin} | TP: +${aiSuggestion.takeProfitPercent}% | SL: -${aiSuggestion.stopLossPercent}%`, 'success');
     console.log('🧠 Signal generated with REAL ANALYSIS:', currentSignal);
+    console.log('🎯 Risk Management:', aiSuggestion);
     if (currentSignal.analysis) {
         console.log('📊 RSI:', currentSignal.analysis.rsi);
         console.log('📈 MACD:', currentSignal.analysis.macd);
@@ -1008,8 +1044,8 @@ async function updatePortfolioStats() {
     portfolio.winRate = portfolio.totalTrades > 0 ? 
         Math.round((winningTrades / portfolio.totalTrades) * 100) : 0;
     
-    elements.totalValue.textContent = `${portfolio.totalValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-    elements.pnl.textContent = `${portfolio.pnl >= 0 ? '+' : ''}${portfolio.pnl.toFixed(0)}`;
+    elements.totalValue.textContent = `$${portfolio.totalValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+    elements.pnl.textContent = `${portfolio.pnl >= 0 ? '+' : ''}$${Math.abs(portfolio.pnl).toFixed(0)}`;
     elements.pnl.style.color = portfolio.pnl >= 0 ? '#00ff88' : '#ff4444';
     elements.winRate.textContent = `${portfolio.winRate}%`;
     elements.totalTrades.textContent = portfolio.totalTrades;
@@ -1107,31 +1143,63 @@ elements.tradePercentageSlider.addEventListener('input', (e) => {
 
 // AI Suggest Take Profit
 elements.btnAiTp.addEventListener('click', () => {
-    if (!currentSignal) return;
+    if (!currentSignal) {
+        console.warn('⚠️ No current signal for AI TP suggestion');
+        return;
+    }
+    
+    // Use correct property names (price or currentPrice, type or signal)
+    const entryPrice = currentSignal.price || currentSignal.currentPrice;
+    const signalType = currentSignal.type || currentSignal.signal;
+    
+    console.log('🎯 AI TP Suggestion - Signal data:', {
+        price: entryPrice,
+        confidence: currentSignal.confidence,
+        type: signalType
+    });
     
     const aiSuggestion = riskManager.calculateAISuggestion(
-        currentSignal.price,
+        entryPrice,
         currentSignal.confidence,
-        currentSignal.type
+        signalType
     );
+    
+    console.log('✅ AI TP Suggestion:', aiSuggestion);
     
     elements.takeProfitPrice.value = aiSuggestion.takeProfit;
     elements.takeProfitPercent.value = aiSuggestion.takeProfitPercent;
+    elements.riskRatio.textContent = `R:R ${aiSuggestion.riskRewardRatio}:1`;
     updateProfitLossDisplay();
 });
 
 // AI Suggest Stop Loss
 elements.btnAiSl.addEventListener('click', () => {
-    if (!currentSignal) return;
+    if (!currentSignal) {
+        console.warn('⚠️ No current signal for AI SL suggestion');
+        return;
+    }
+    
+    // Use correct property names (price or currentPrice, type or signal)
+    const entryPrice = currentSignal.price || currentSignal.currentPrice;
+    const signalType = currentSignal.type || currentSignal.signal;
+    
+    console.log('🎯 AI SL Suggestion - Signal data:', {
+        price: entryPrice,
+        confidence: currentSignal.confidence,
+        type: signalType
+    });
     
     const aiSuggestion = riskManager.calculateAISuggestion(
-        currentSignal.price,
+        entryPrice,
         currentSignal.confidence,
-        currentSignal.type
+        signalType
     );
+    
+    console.log('✅ AI SL Suggestion:', aiSuggestion);
     
     elements.stopLossPrice.value = aiSuggestion.stopLoss;
     elements.stopLossPercent.value = aiSuggestion.stopLossPercent;
+    elements.riskRatio.textContent = `R:R ${aiSuggestion.riskRewardRatio}:1`;
     updateProfitLossDisplay();
 });
 
@@ -1142,10 +1210,13 @@ elements.takeProfitPrice.addEventListener('input', (e) => {
     const price = parseFloat(e.target.value);
     if (isNaN(price)) return;
     
+    const entryPrice = currentSignal.price || currentSignal.currentPrice;
+    const signalType = currentSignal.type || currentSignal.signal;
+    
     const percent = riskManager.calculatePercentFromPrice(
-        currentSignal.price,
+        entryPrice,
         price,
-        currentSignal.type
+        signalType
     );
     
     elements.takeProfitPercent.value = Math.abs(percent).toFixed(2);
@@ -1159,10 +1230,13 @@ elements.takeProfitPercent.addEventListener('input', (e) => {
     const percent = parseFloat(e.target.value);
     if (isNaN(percent)) return;
     
+    const entryPrice = currentSignal.price || currentSignal.currentPrice;
+    const signalType = currentSignal.type || currentSignal.signal;
+    
     const price = riskManager.calculatePriceFromPercent(
-        currentSignal.price,
+        entryPrice,
         percent,
-        currentSignal.type
+        signalType
     );
     
     elements.takeProfitPrice.value = price.toFixed(2);
@@ -1176,10 +1250,13 @@ elements.stopLossPrice.addEventListener('input', (e) => {
     const price = parseFloat(e.target.value);
     if (isNaN(price)) return;
     
+    const entryPrice = currentSignal.price || currentSignal.currentPrice;
+    const signalType = currentSignal.type || currentSignal.signal;
+    
     const percent = riskManager.calculatePercentFromPrice(
-        currentSignal.price,
+        entryPrice,
         price,
-        currentSignal.type
+        signalType
     );
     
     elements.stopLossPercent.value = Math.abs(percent).toFixed(2);
@@ -1193,10 +1270,13 @@ elements.stopLossPercent.addEventListener('input', (e) => {
     const percent = parseFloat(e.target.value);
     if (isNaN(percent)) return;
     
+    const entryPrice = currentSignal.price || currentSignal.currentPrice;
+    const signalType = currentSignal.type || currentSignal.signal;
+    
     const price = riskManager.calculatePriceFromPercent(
-        currentSignal.price,
+        entryPrice,
         -percent, // Negative for stop loss
-        currentSignal.type
+        signalType
     );
     
     elements.stopLossPrice.value = price.toFixed(2);
@@ -1328,10 +1408,30 @@ function updateTradeAmount() {
 elements.btnSignal.removeEventListener('click', generateSignal);
 elements.btnSignal.addEventListener('click', generateSignalEnhanced);
 
+// Initialize portfolio display immediately with 0 values
+updateTradeAmount(); // Show $0 trade amount initially
+
+// Update signal button state based on cooldown
+function updateSignalButtonState() {
+    if (!signalCooldown.canGenerate(selectedCoin)) {
+        const remaining = signalCooldown.getRemainingTimeFormatted(selectedCoin);
+        elements.btnSignal.disabled = true;
+        elements.btnSignal.textContent = `Next signal in: ${remaining}`;
+    } else {
+        elements.btnSignal.disabled = false;
+        elements.btnSignal.textContent = 'Generate Signal';
+    }
+}
+
+// Update button state every second
+setInterval(updateSignalButtonState, 1000);
+updateSignalButtonState(); // Initial update
+
 // Auto-load market data on init
 setTimeout(() => {
     updateMarketData();
     updatePortfolioStats();
+    updateAIExplainerLink(); // Set initial AI Explainer link
 }, 2000);
 
 // Auto-update market data every 30 seconds
@@ -1342,6 +1442,8 @@ setInterval(updateMarketData, 30000);
  * Update profit/loss display for risk management
  */
 function updateProfitLossDisplay() {
+    console.log('💰 updateProfitLossDisplay called');
+    
     if (!currentSignal) {
         console.log('⚠️ updateProfitLossDisplay: No current signal');
         return;
@@ -1349,8 +1451,10 @@ function updateProfitLossDisplay() {
     
     // Ensure portfolio has valid value
     const portfolioValue = portfolio.totalValue || 0;
+    console.log('💰 Portfolio Value:', portfolioValue);
+    
     if (portfolioValue === 0) {
-        console.log('⚠️ updateProfitLossDisplay: Portfolio value is 0');
+        console.warn('⚠️ updateProfitLossDisplay: Portfolio value is 0');
         elements.tpProfit.textContent = '$0.00';
         elements.slLoss.textContent = '$0.00';
         return;
@@ -1427,6 +1531,13 @@ generateSignalEnhanced = function() {
         return;
     }
     
+    // Check cooldown (15 minutes)
+    if (!signalCooldown.canGenerate(selectedCoin)) {
+        const remaining = signalCooldown.getRemainingTimeFormatted(selectedCoin);
+        alert(`⏱️ Please wait ${remaining} before generating a new signal for ${selectedCoin}\n\nSignals update every 15 minutes for accuracy.`);
+        return;
+    }
+    
     updateStatus(elements.globalStatus, `🧠 AI analyzing ${selectedCoin}...`, 'info');
     
     // Get current price
@@ -1436,25 +1547,15 @@ generateSignalEnhanced = function() {
         return;
     }
     
-    // Generate AI signal
-    const signals = ['BUY', 'SELL', 'HOLD'];
-    const signal = signals[Math.floor(Math.random() * signals.length)];
-    const confidence = Math.random() * 0.4 + 0.6; // 60-100%
-    const riskScore = Math.floor(Math.random() * 60) + 20; // 20-80
-    const targetPrice = currentPrice * (1 + (Math.random() - 0.5) * 0.1);
+    // Generate REAL AI signal using technical analysis
+    currentSignal = generateRealSignal(selectedCoin, currentPrice, aiExplainer, info);
+    const signal = currentSignal.signal;
+    const confidence = currentSignal.confidence;
+    const riskScore = currentSignal.riskScore;
+    const targetPrice = currentSignal.targetPrice;
     
-    currentSignal = {
-        coin: selectedCoin,
-        signal: signal,
-        type: signal, // Add type for risk manager
-        price: currentPrice, // Add price for risk manager
-        confidence: confidence,
-        riskScore: riskScore,
-        targetPrice: targetPrice,
-        currentPrice: currentPrice,
-        timestamp: new Date(),
-        chainId: info.chainId
-    };
+    // Save signal with cooldown
+    signalCooldown.saveSignal(selectedCoin, currentSignal);
     
     // Update UI
     elements.currentSignal.className = `signal signal-${signal.toLowerCase()}`;
@@ -1472,7 +1573,9 @@ generateSignalEnhanced = function() {
     elements.btnExecute.textContent = `Execute ${signal} ${selectedCoin} (${tradePercentage}% - $${tradeAmount.toFixed(0)})`;
     
     // Show risk management section
+    console.log('🎯 Showing Risk Management section');
     elements.riskManagement.style.display = 'block';
+    console.log('🎯 Risk Management display:', elements.riskManagement.style.display);
     
     // Calculate and populate AI suggestions for stop loss and take profit
     const aiSuggestion = riskManager.calculateAISuggestion(
@@ -1492,7 +1595,14 @@ generateSignalEnhanced = function() {
     updateProfitLossDisplay();
     
     updateStatus(elements.globalStatus, `✅ AI Signal: ${signal} ${selectedCoin} | TP: +${aiSuggestion.takeProfitPercent}% | SL: -${aiSuggestion.stopLossPercent}%`, 'success');
-    console.log('🧠 Signal generated:', currentSignal);
+    console.log('🧠 Signal generated with REAL ANALYSIS:', currentSignal);
+    if (currentSignal.analysis) {
+        console.log('📊 RSI:', currentSignal.analysis.rsi);
+        console.log('📈 MACD:', currentSignal.analysis.macd);
+        console.log('📉 MA:', currentSignal.analysis.ma);
+        console.log('📊 BB:', currentSignal.analysis.bb);
+        console.log('💡 Reasoning:', currentSignal.analysis.reasoning);
+    }
     console.log('🎯 Risk Management:', aiSuggestion);
 };
 

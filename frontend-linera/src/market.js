@@ -65,6 +65,13 @@ export class MarketManager {
     getData() {
         return this.data;
     }
+
+    /**
+     * Alias for getData() - for compatibility
+     */
+    getMarketData() {
+        return this.data;
+    }
 }
 
 export default MarketManager;

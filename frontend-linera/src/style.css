@@ -1644,6 +1644,37 @@
     border: 1px solid rgba(41, 98, 255, 0.3);
 }
 
+/* Coin Badge - Shows which coin the signal is for */
+.coin-badge {
+    display: inline-block;
+    background: rgba(41, 98, 255, 0.2);
+    color: #2962FF;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-left: 8px;
+    border: 1px solid rgba(41, 98, 255, 0.3);
+}
+
+.signal-buy .coin-badge {
+    background: rgba(38, 166, 154, 0.2);
+    color: #26A69A;
+    border-color: rgba(38, 166, 154, 0.3);
+}
+
+.signal-sell .coin-badge {
+    background: rgba(239, 83, 80, 0.2);
+    color: #EF5350;
+    border-color: rgba(239, 83, 80, 0.3);
+}
+
+.signal-hold .coin-badge {
+    background: rgba(255, 152, 0, 0.2);
+    color: #FF9800;
+    border-color: rgba(255, 152, 0, 0.3);
+}
+
 .signal-metric {
     margin-bottom: 16px;
 }

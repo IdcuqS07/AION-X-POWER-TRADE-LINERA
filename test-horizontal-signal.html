@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Horizontal Signal</title>
+    <style>
+        body {
+            background: #0a0a0a;
+            color: white;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 20px;
+            padding: 28px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h3 {
+            color: #00ff88;
+            margin-bottom: 24px;
+        }
+        
+        /* HORIZONTAL LAYOUT */
+        .signal-horizontal-layout {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            border: 2px solid red; /* DEBUG BORDER */
+        }
+        
+        .signal-horizontal-layout > * {
+            flex: 1;
+        }
+        
+        .signal-horizontal-layout > .signal-display-section {
+            flex: 2;
+        }
+        
+        .signal-display-section {
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+        }
+        
+        .signal-controls-section {
+            background: rgba(0, 255, 136, 0.08);
+            border-radius: 12px;
+            padding: 18px;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+        
+        .coin-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin: 10px 0;
+        }
+        
+        .coin-btn {
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            text-align: center;
+        }
+        
+        .coin-btn.active {
+            background: linear-gradient(135deg, #00ff88, #00ccff);
+            color: #000;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h3>🧠 AI Trading Signal - TEST HORIZONTAL</h3>
+        
+        <div class="signal-horizontal-layout">
+            <!-- LEFT SIDE (2x width) -->
+            <div class="signal-display-section">
+                <h4>Signal Display (LEFT - 2x width)</h4>
+                <p>Action: BUY</p>
+                <p>Confidence: 85%</p>
+                <p>Risk Score: 35/100</p>
+                <p>Target Price: $45,000</p>
+            </div>
+            
+            <!-- RIGHT SIDE (1x width) -->
+            <div class="signal-controls-section">
+                <h4>Controls (RIGHT - 1x width)</h4>
+                <p style="text-align: center; margin: 10px 0;">SELECT COIN</p>
+                <div class="coin-selector">
+                    <div class="coin-btn">BTC</div>
+                    <div class="coin-btn">ETH</div>
+                    <div class="coin-btn">SOL</div>
+                    <div class="coin-btn active">BNB</div>
+                </div>
+                <button class="btn">Generate Signal</button>
+            </div>
+        </div>
+        
+        <p style="color: #00ff88; margin-top: 20px;">
+            ✅ Jika kamu melihat 2 kotak bersebelahan (kiri lebih lebar dari kanan), 
+            berarti horizontal layout BERHASIL!
+        </p>
+    </div>
+</body>
+</html>

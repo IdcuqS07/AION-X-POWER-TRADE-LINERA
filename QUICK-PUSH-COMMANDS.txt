@@ -1,0 +1,167 @@
+# Quick Git Push Commands
+
+## Setup (First Time)
+git config user.email "idchuq@gmail.com"
+git config user.name "AION-X"
+
+## Check Status
+git status
+
+## Add Files
+# Add specific files
+git add <file1> <file2> <file3>
+
+# Add all changes
+git add .
+
+# Add all modified files
+git add -u
+
+## Commit
+# Simple commit
+git commit -m "Your message here"
+
+# Detailed commit
+git commit -m "Title
+
+- Detail 1
+- Detail 2
+- Detail 3"
+
+## Push
+git push origin main
+
+## Quick Push (All Changes)
+git add .
+git commit -m "Update: description"
+git push origin main
+
+## View Commit History
+git log --oneline -10
+
+## View Last Commit
+git show
+
+## Undo Last Commit (Keep Changes)
+git reset --soft HEAD~1
+
+## Undo Last Commit (Discard Changes)
+git reset --hard HEAD~1
+
+## Create New Branch
+git checkout -b feature-name
+
+## Switch Branch
+git checkout main
+git checkout feature-name
+
+## Merge Branch
+git checkout main
+git merge feature-name
+
+## Pull Latest Changes
+git pull origin main
+
+## View Remote URL
+git remote -v
+
+## Change Remote URL
+git remote set-url origin <new-url>
+
+---
+
+## Common Workflows
+
+### Quick Update
+```bash
+git add .
+git commit -m "fix: description"
+git push origin main
+```
+
+### Feature Development
+```bash
+git checkout -b feature-wallet
+# Make changes
+git add .
+git commit -m "feat: wallet management"
+git push origin feature-wallet
+# Create PR on GitHub
+```
+
+### Bug Fix
+```bash
+git checkout -b fix-import
+# Fix the bug
+git add .
+git commit -m "fix: import auto-connect"
+git push origin fix-import
+```
+
+### Documentation Update
+```bash
+git add *.md
+git commit -m "docs: update documentation"
+git push origin main
+```
+
+---
+
+## Repository Info
+
+**Repository:** https://github.com/IdcuqS07/AION-X-POWER-TRADE-LINERA
+**Branch:** main
+**Author:** AION-X <idchuq@gmail.com>
+
+---
+
+## Latest Push
+
+**Date:** December 21, 2025
+**Commit:** c527573
+**Message:** feat: Wallet Management Phase 1 + AI Explainer Integration
+
+**Files Changed:** 21 files
+**Insertions:** +6,148
+**Deletions:** -925
+
+**Features:**
+- Wallet Management Phase 1
+- AI Explainer Integration
+- Bug Fixes (Risk Management, Portfolio Balance, Import Auto-Connect)
+
+---
+
+## Tips
+
+1. Always check `git status` before committing
+2. Write clear, descriptive commit messages
+3. Use conventional commits (feat:, fix:, docs:, etc.)
+4. Test before pushing
+5. Pull before pushing if working with team
+6. Use branches for new features
+7. Keep commits atomic (one feature per commit)
+8. Document breaking changes
+
+---
+
+## Conventional Commits
+
+- `feat:` - New feature
+- `fix:` - Bug fix
+- `docs:` - Documentation only
+- `style:` - Code style (formatting, etc.)
+- `refactor:` - Code refactoring
+- `test:` - Adding tests
+- `chore:` - Maintenance tasks
+
+Examples:
+- `feat: add wallet export functionality`
+- `fix: resolve import auto-connect issue`
+- `docs: update README with new features`
+- `refactor: improve signal generation logic`
+- `test: add wallet management tests`
+
+---
+
+Last Updated: December 21, 2025

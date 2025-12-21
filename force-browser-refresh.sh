@@ -1,0 +1,36 @@
+#!/bin/bash
+
+echo "🔄 Force Browser Refresh Script"
+echo "================================"
+echo ""
+
+# Get current timestamp
+TIMESTAMP=$(date +%s)
+
+echo "📝 Instructions to see the new horizontal layout:"
+echo ""
+echo "1. Open your browser"
+echo "2. Go to: http://152.42.199.50"
+echo "3. Press Ctrl+Shift+R (Windows/Linux) or Cmd+Shift+R (Mac)"
+echo "   This will do a HARD REFRESH and bypass cache"
+echo ""
+echo "OR"
+echo ""
+echo "4. Open Developer Tools (F12)"
+echo "5. Right-click the refresh button"
+echo "6. Select 'Empty Cache and Hard Reload'"
+echo ""
+echo "OR"
+echo ""
+echo "7. Use this direct link with cache buster:"
+echo "   http://152.42.199.50/?v=$TIMESTAMP"
+echo ""
+echo "✅ The horizontal layout is already deployed!"
+echo "   Just need to clear your browser cache to see it."
+echo ""
+echo "🎯 What you should see:"
+echo "   - AI Trading Signal card with 2-column layout"
+echo "   - Left side: Signal display with metrics"
+echo "   - Right side: Coin selector (2x2 grid) + Generate button"
+echo "   - Coin buttons with icons: ₿ Ξ ◎ ◆"
+echo ""

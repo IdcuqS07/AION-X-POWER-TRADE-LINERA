@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Risk Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #131722;
+            color: white;
+        }
+        
+        .test-section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid rgba(38, 166, 154, 0.3);
+        }
+        
+        button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            opacity: 0.9;
+        }
+        
+        .risk-management-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            border: 1px solid rgba(38, 166, 154, 0.2);
+            display: none;
+        }
+        
+        .risk-management-section.visible {
+            display: block;
+        }
+        
+        .risk-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #1E222D;
+        }
+        
+        .risk-header h4 {
+            margin: 0;
+            font-size: 16px;
+            color: #26A69A;
+        }
+        
+        .risk-ratio {
+            padding: 4px 12px;
+            background: rgba(38, 166, 154, 0.1);
+            border: 1px solid rgba(38, 166, 154, 0.3);
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #26A69A;
+        }
+        
+        .risk-control {
+            margin: 15px 0;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+        }
+        
+        .risk-control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .risk-input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .risk-input {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .risk-input label {
+            font-size: 11px;
+            color: #787B86;
+            text-transform: uppercase;
+        }
+        
+        .risk-input input {
+            padding: 8px 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            color: white;
+            font-size: 14px;
+        }
+        
+        .risk-info {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .risk-info.profit {
+            background: rgba(0, 255, 136, 0.1);
+            color: #00ff88;
+        }
+        
+        .risk-info.loss {
+            background: rgba(255, 68, 68, 0.1);
+            color: #ff4444;
+        }
+        
+        .log {
+            background: #000;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        
+        .log-entry {
+            margin: 2px 0;
+        }
+        
+        .log-entry.success {
+            color: #00ff88;
+        }
+        
+        .log-entry.error {
+            color: #ff4444;
+        }
+        
+        .log-entry.info {
+            color: #ffaa00;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Risk Management Test</h1>
+    
+    <div class="test-section">
+        <h3>Test Controls</h3>
+        <button onclick="showRiskManagement()">Show Risk Management</button>
+        <button onclick="hideRiskManagement()">Hide Risk Management</button>
+        <button onclick="populateFields()">Populate Fields</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>Mock Signal Data</h3>
+        <p>Entry Price: <strong id="entry-price">$42,500</strong></p>
+        <p>Signal Type: <strong id="signal-type">BUY</strong></p>
+        <p>Confidence: <strong id="confidence">85%</strong></p>
+        <p>Portfolio Value: <strong id="portfolio-value">$10,000</strong></p>
+        <p>Trade Percentage: <strong id="trade-percentage">25%</strong></p>
+    </div>
+    
+    <!-- Risk Management Section -->
+    <div class="risk-management-section" id="risk-management">
+        <div class="risk-header">
+            <h4>⚙️ Risk Management</h4>
+            <span class="risk-ratio" id="risk-ratio">R:R 2:1</span>
+        </div>
+        
+        <!-- Take Profit -->
+        <div class="risk-control">
+            <div class="risk-control-header">
+                <label>🎯 Take Profit (Target)</label>
+                <button onclick="aiSuggestTP()">AI Suggest</button>
+            </div>
+            <div class="risk-input-group">
+                <div class="risk-input">
+                    <label>Price</label>
+                    <input type="number" id="take-profit-price" placeholder="45000" step="0.01" />
+                </div>
+                <div class="risk-input">
+                    <label>Percentage</label>
+                    <input type="number" id="take-profit-percent" placeholder="5" step="0.1" />
+                </div>
+            </div>
+            <div class="risk-info profit">
+                Profit: +$<span id="tp-profit">0</span>
+            </div>
+        </div>
+
+        <!-- Stop Loss -->
+        <div class="risk-control">
+            <div class="risk-control-header">
+                <label>🛡️ Stop Loss</label>
+                <button onclick="aiSuggestSL()">AI Suggest</button>
+            </div>
+            <div class="risk-input-group">
+                <div class="risk-input">
+                    <label>Price</label>
+                    <input type="number" id="stop-loss-price" placeholder="40000" step="0.01" />
+                </div>
+                <div class="risk-input">
+                    <label>Percentage</label>
+                    <input type="number" id="stop-loss-percent" placeholder="3" step="0.1" />
+                </div>
+            </div>
+            <div class="risk-info loss">
+                Loss: -$<span id="sl-loss">0</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Console Log</h3>
+        <div class="log" id="log"></div>
+    </div>
+
+    <script>
+        // Mock data
+        const mockSignal = {
+            entryPrice: 42500,
+            signalType: 'BUY',
+            confidence: 0.85,
+            portfolioValue: 10000,
+            tradePercentage: 25
+        };
+        
+        // Log function
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+            log('Log cleared', 'info');
+        }
+        
+        // Show/Hide functions
+        function showRiskManagement() {
+            const section = document.getElementById('risk-management');
+            log('🎯 Showing Risk Management section', 'info');
+            section.style.display = 'block';
+            log(`🎯 Risk Management display: ${section.style.display}`, 'success');
+            
+            // Also add class
+            section.classList.add('visible');
+            log('✅ Added "visible" class', 'success');
+        }
+        
+        function hideRiskManagement() {
+            const section = document.getElementById('risk-management');
+            log('🔒 Hiding Risk Management section', 'info');
+            section.style.display = 'none';
+            section.classList.remove('visible');
+            log('✅ Hidden successfully', 'success');
+        }
+        
+        // AI Suggestion calculation
+        function calculateAISuggestion(entryPrice, confidence, signalType) {
+            let takeProfitPercent, stopLossPercent;
+
+            if (confidence >= 0.90) {
+                takeProfitPercent = 8;
+                stopLossPercent = 3;
+            } else if (confidence >= 0.85) {
+                takeProfitPercent = 6;
+                stopLossPercent = 3;
+            } else if (confidence >= 0.80) {
+                takeProfitPercent = 5;
+                stopLossPercent = 4;
+            } else {
+                takeProfitPercent = 4;
+                stopLossPercent = 5;
+            }
+
+            const takeProfit = signalType === 'BUY' 
+                ? entryPrice * (1 + takeProfitPercent / 100)
+                : entryPrice * (1 - takeProfitPercent / 100);
+
+            const stopLoss = signalType === 'BUY'
+                ? entryPrice * (1 - stopLossPercent / 100)
+                : entryPrice * (1 + stopLossPercent / 100);
+
+            return {
+                takeProfit: Math.round(takeProfit * 100) / 100,
+                takeProfitPercent,
+                stopLoss: Math.round(stopLoss * 100) / 100,
+                stopLossPercent,
+                riskRewardRatio: (takeProfitPercent / stopLossPercent).toFixed(2)
+            };
+        }
+        
+        // Populate fields
+        function populateFields() {
+            log('📝 Populating fields with AI suggestions', 'info');
+            
+            const suggestion = calculateAISuggestion(
+                mockSignal.entryPrice,
+                mockSignal.confidence,
+                mockSignal.signalType
+            );
+            
+            document.getElementById('take-profit-price').value = suggestion.takeProfit;
+            document.getElementById('take-profit-percent').value = suggestion.takeProfitPercent;
+            document.getElementById('stop-loss-price').value = suggestion.stopLoss;
+            document.getElementById('stop-loss-percent').value = suggestion.stopLossPercent;
+            document.getElementById('risk-ratio').textContent = `R:R ${suggestion.riskRewardRatio}:1`;
+            
+            log(`✅ TP: $${suggestion.takeProfit} (${suggestion.takeProfitPercent}%)`, 'success');
+            log(`✅ SL: $${suggestion.stopLoss} (${suggestion.stopLossPercent}%)`, 'success');
+            log(`✅ R:R: ${suggestion.riskRewardRatio}:1`, 'success');
+            
+            updateProfitLoss();
+        }
+        
+        // AI Suggest TP
+        function aiSuggestTP() {
+            log('🎯 AI Suggest Take Profit clicked', 'info');
+            populateFields();
+        }
+        
+        // AI Suggest SL
+        function aiSuggestSL() {
+            log('🛡️ AI Suggest Stop Loss clicked', 'info');
+            populateFields();
+        }
+        
+        // Update profit/loss
+        function updateProfitLoss() {
+            const tradeAmount = mockSignal.portfolioValue * mockSignal.tradePercentage / 100;
+            const coinAmount = tradeAmount / mockSignal.entryPrice;
+            
+            const tpPrice = parseFloat(document.getElementById('take-profit-price').value);
+            const slPrice = parseFloat(document.getElementById('stop-loss-price').value);
+            
+            if (!isNaN(tpPrice) && tpPrice > 0) {
+                const tpProfit = (tpPrice - mockSignal.entryPrice) * coinAmount;
+                document.getElementById('tp-profit').textContent = Math.abs(tpProfit).toFixed(2);
+                log(`💰 TP Profit: $${tpProfit.toFixed(2)}`, 'success');
+            }
+            
+            if (!isNaN(slPrice) && slPrice > 0) {
+                const slLoss = (slPrice - mockSignal.entryPrice) * coinAmount;
+                document.getElementById('sl-loss').textContent = Math.abs(slLoss).toFixed(2);
+                log(`💰 SL Loss: $${Math.abs(slLoss).toFixed(2)}`, 'error');
+            }
+        }
+        
+        // Initialize
+        log('🚀 Test page loaded', 'success');
+        log('📊 Mock signal data ready', 'info');
+        log('Click "Show Risk Management" to display the section', 'info');
+    </script>
+</body>
+</html>

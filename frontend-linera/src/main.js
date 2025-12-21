@@ -10,6 +10,7 @@ import AIExplainer from './ai-explainer.js';
 import { generateRealSignal } from './signal-real.js';
 import SignalCooldownManager from './signal-cooldown.js';
 import WalletManager from './wallet-manager.js';
+import SignalPersistenceManager from './signal-persistence.js';
 
 // Initialize managers
 const lineraManager = new LineraManager();
@@ -18,6 +19,7 @@ const tradingManager = new TradingManager();
 const faucetManager = new FaucetManager();
 const signalCooldown = new SignalCooldownManager();
 const walletManager = new WalletManager();
+const signalPersistence = new SignalPersistenceManager();
 
 // DOM Elements
 const elements = {
@@ -151,6 +153,7 @@ let fullOwner = '';
 let selectedCoin = 'BTC';
 let selectedPlatform = 'linera';
 let currentSignal = null;
+let activeSignal = null; // Global persistent signal (not tied to selected coin)
 let tradePercentage = 25; // Default 25%
 let portfolio = {
     totalValue: 0, // Will be fetched from blockchain
@@ -907,6 +910,13 @@ function selectCoin(event) {
     
     console.log('💰 Selected coin:', coin);
     
+    // Check if there's an active signal (persistent across coin changes)
+    if (activeSignal) {
+        console.log('📊 Active signal exists for:', activeSignal.coin);
+        // Keep showing the active signal even if different coin selected
+        displayActiveSignal();
+    }
+    
     // Don't auto-generate - let user click "Generate Signal" button
     // This makes coin selection instant and responsive
 }
@@ -919,6 +929,62 @@ function updateAIExplainerLink() {
     if (explainerBtn) {
         explainerBtn.href = `/ai-explainer.html?coin=${selectedCoin}`;
     }
+}
+
+/**
+ * Display active signal (persistent across coin changes)
+ */
+function displayActiveSignal() {
+    if (!activeSignal) {
+        console.log('⚠️ No active signal to display');
+        return;
+    }
+    
+    // Check if signal is still valid (within 15 minutes)
+    const signalAge = Date.now() - activeSignal.timestamp;
+    const FIFTEEN_MINUTES = 15 * 60 * 1000;
+    
+    if (signalAge > FIFTEEN_MINUTES) {
+        console.log('⏱️ Active signal expired, clearing...');
+        activeSignal = null;
+        currentSignal = null;
+        elements.riskManagement.style.display = 'none';
+        elements.btnExecute.disabled = true;
+        return;
+    }
+    
+    const signal = activeSignal.signal;
+    const confidence = activeSignal.confidence;
+    const riskScore = activeSignal.riskScore;
+    const targetPrice = activeSignal.targetPrice;
+    const signalCoin = activeSignal.coin;
+    
+    // Update UI with coin badge
+    elements.currentSignal.className = `signal signal-${signal.toLowerCase()}`;
+    elements.signalAction.innerHTML = `${signal} <span class="coin-badge">${signalCoin}</span>`;
+    elements.signalConfidence.textContent = `${(confidence * 100).toFixed(1)}%`;
+    elements.confidenceText.textContent = `${(confidence * 100).toFixed(1)}%`;
+    elements.confidenceBar.style.width = `${confidence * 100}%`;
+    elements.riskText.textContent = `${riskScore}/100`;
+    elements.riskBar.style.width = `${riskScore}%`;
+    elements.targetPrice.textContent = `${targetPrice.toFixed(2)}`;
+    
+    // Show risk management section
+    elements.riskManagement.style.display = 'block';
+    
+    // Enable execute button
+    elements.btnExecute.disabled = false;
+    const tradeAmount = (portfolio.totalValue * tradePercentage) / 100;
+    elements.btnExecute.textContent = `Execute ${signal} ${signalCoin} (${tradePercentage}% - ${tradeAmount.toFixed(0)})`;
+    
+    // Set currentSignal for risk management calculations
+    currentSignal = activeSignal;
+    
+    console.log('✅ Active signal displayed:', {
+        coin: signalCoin,
+        signal: signal,
+        age: `${Math.floor(signalAge / 60000)} minutes ago`
+    });
 }
 
 /**
@@ -949,7 +1015,9 @@ function generateSignalEnhanced() {
     }
     
     // Generate REAL AI signal using technical analysis
-    currentSignal = generateRealSignal(selectedCoin, currentPrice, aiExplainer, info);
+    const generatedSignal = generateRealSignal(selectedCoin, currentPrice, aiExplainer, info);
+    currentSignal = generatedSignal;
+    activeSignal = signalPersistence.saveActiveSignal(generatedSignal, selectedCoin);
     const signal = currentSignal.signal;
     const confidence = currentSignal.confidence;
     const riskScore = currentSignal.riskScore;
@@ -1586,7 +1654,9 @@ generateSignalEnhanced = function() {
     }
     
     // Generate REAL AI signal using technical analysis
-    currentSignal = generateRealSignal(selectedCoin, currentPrice, aiExplainer, info);
+    const generatedSignal = generateRealSignal(selectedCoin, currentPrice, aiExplainer, info);
+    currentSignal = generatedSignal;
+    activeSignal = signalPersistence.saveActiveSignal(generatedSignal, selectedCoin);
     const signal = currentSignal.signal;
     const confidence = currentSignal.confidence;
     const riskScore = currentSignal.riskScore;

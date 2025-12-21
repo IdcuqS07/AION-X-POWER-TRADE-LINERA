@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preview - Full Horizontal Layout</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #fff;
+            padding: 20px;
+        }
+        .info-banner {
+            background: linear-gradient(135deg, #00ff88, #00ccff);
+            color: #000;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .info-banner h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        .info-banner p {
+            font-size: 1.1em;
+            margin: 5px 0;
+        }
+        .container { max-width: 1600px; margin: 0 auto; }
+        .main-content { display: flex; flex-direction: column; gap: 20px; }
+        .card-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        .card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(20px);
+        }
+        .card-full { grid-column: 1 / -1; }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.1);
+        }
+        .card-header h3 {
+            color: #00ff88;
+            font-size: 1.2em;
+            margin: 0;
+        }
+        .horizontal-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .portfolio-stats {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+        }
+        .stat-item {
+            flex: 1;
+            min-width: 100px;
+        }
+        .stat-label {
+            font-size: 0.75em;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #fff;
+        }
+        .stat-value.price {
+            background: linear-gradient(135deg, #00ff88, #00ccff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .market-horizontal {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+        .market-coin {
+            text-align: center;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+        .coin-name {
+            font-size: 0.85em;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 8px;
+        }
+        .coin-price {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #00ff88;
+            margin-bottom: 5px;
+        }
+        .coin-change {
+            font-size: 0.9em;
+            font-weight: 600;
+            color: #00ff88;
+        }
+        .signal-horizontal-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 20px;
+        }
+        .signal-display-section {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .signal-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        .signal-header strong {
+            font-size: 1.3em;
+            color: #00ff88;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #00ff88, #00ccff);
+            border-radius: 4px;
+        }
+        .coin-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        .coin-btn {
+            padding: 12px 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.85em;
+        }
+        .coin-btn.active {
+            background: linear-gradient(135deg, #00ff88, #00ccff);
+            color: #000;
+            border-color: #00ff88;
+        }
+        .btn {
+            background: linear-gradient(45deg, #00ff88, #00cc66);
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        .cache-warning {
+            background: rgba(255, 170, 0, 0.1);
+            border: 2px solid #ffaa00;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        .cache-warning h2 {
+            color: #ffaa00;
+            margin-bottom: 15px;
+        }
+        .cache-warning ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        .cache-warning li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        .cache-warning li:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #ffaa00;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="info-banner">
+        <h1>✅ Preview: Full Horizontal Layout</h1>
+        <p>Ini adalah preview tampilan baru yang sudah di-deploy</p>
+        <p><strong>URL Production: http://152.42.199.50</strong></p>
+    </div>
+
+    <div class="container">
+        <div class="main-content">
+            
+            <!-- Row 1: Portfolio + Wallet -->
+            <div class="card-row">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>💰 Portfolio</h3>
+                    </div>
+                    <div class="horizontal-content">
+                        <div class="portfolio-stats">
+                            <div class="stat-item">
+                                <div class="stat-label">Total Value</div>
+                                <div class="stat-value price">$10,000</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">P&L</div>
+                                <div class="stat-value">+$250</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Win Rate</div>
+                                <div class="stat-value">75%</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Trades</div>
+                                <div class="stat-value">12</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>👤 Wallet</h3>
+                    </div>
+                    <div class="horizontal-content">
+                        <div style="flex: 1;">
+                            <div style="font-size: 0.9em; color: rgba(255,255,255,0.7);">Status: Connected</div>
+                            <div style="font-size: 0.85em; color: #00ff88; margin-top: 5px;">Chain: e476...7b4a</div>
+                        </div>
+                        <button class="btn">Connect</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: Market Data -->
+            <div class="card card-full">
+                <div class="card-header">
+                    <h3>📊 Live Market Data</h3>
+                </div>
+                <div class="market-horizontal">
+                    <div class="market-coin">
+                        <div class="coin-name">BTC/USDT</div>
+                        <div class="coin-price">$43,250</div>
+                        <div class="coin-change">+2.5%</div>
+                    </div>
+                    <div class="market-coin">
+                        <div class="coin-name">ETH/USDT</div>
+                        <div class="coin-price">$2,280</div>
+                        <div class="coin-change">+1.8%</div>
+                    </div>
+                    <div class="market-coin">
+                        <div class="coin-name">SOL/USDT</div>
+                        <div class="coin-price">$98.50</div>
+                        <div class="coin-change" style="color: #ff4444;">-0.5%</div>
+                    </div>
+                    <div class="market-coin">
+                        <div class="coin-name">BNB/USDT</div>
+                        <div class="coin-price">$315.20</div>
+                        <div class="coin-change">+3.2%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 3: AI Signal -->
+            <div class="card card-full">
+                <div class="card-header">
+                    <h3>🧠 AI Trading Signal</h3>
+                </div>
+                <div class="signal-horizontal-layout">
+                    <div class="signal-display-section">
+                        <div class="signal-header">
+                            <strong>BUY BNB</strong>
+                            <span style="color: #00ccff;">87.5%</span>
+                        </div>
+                        <div style="font-size: 0.85em; color: rgba(255,255,255,0.7); margin-bottom: 5px;">
+                            <span>Confidence</span>
+                            <span style="float: right;">87.5%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 87.5%"></div>
+                        </div>
+                        <div style="font-size: 0.85em; color: rgba(255,255,255,0.7); margin: 15px 0 5px;">
+                            <span>Risk Score</span>
+                            <span style="float: right;">45/100</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 45%"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; justify-content: center; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 12px;">
+                        <div style="font-size: 0.85em; color: rgba(255,255,255,0.7); margin-bottom: 5px;">Trade Amount</div>
+                        <div style="font-size: 1.2em; font-weight: 700; color: #00ccff;">25% ($2,500)</div>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 12px; justify-content: center;">
+                        <div style="font-size: 0.85em; color: rgba(255,255,255,0.7); text-transform: uppercase;">Select Coin</div>
+                        <div class="coin-selector">
+                            <div class="coin-btn">₿ BTC</div>
+                            <div class="coin-btn">Ξ ETH</div>
+                            <div class="coin-btn">◎ SOL</div>
+                            <div class="coin-btn active">◆ BNB</div>
+                        </div>
+                        <button class="btn" style="width: 100%;">🎯 Generate Signal</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 4: Platform + Network -->
+            <div class="card-row">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>🏦 Platform</h3>
+                    </div>
+                    <div class="horizontal-content">
+                        <div style="flex: 1; font-size: 0.9em;">
+                            <div>Linera Blockchain</div>
+                            <div style="color: rgba(255,255,255,0.6); margin-top: 5px;">Linera Testnet</div>
+                        </div>
+                        <button class="btn">Connect</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>🔗 Network</h3>
+                    </div>
+                    <div class="horizontal-content">
+                        <div style="flex: 1; font-size: 0.9em;">
+                            <div>Status: 🟢 Online</div>
+                            <div style="color: rgba(255,255,255,0.6); margin-top: 5px;">Chains: 3 | Height: 12,847</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="cache-warning">
+            <h2>⚠️ Jika Anda Melihat Tampilan Lama di Production</h2>
+            <p style="margin-bottom: 15px;">File sudah benar di server, tapi browser Anda mungkin masih menyimpan cache lama. Lakukan salah satu cara ini:</p>
+            <ul>
+                <li><strong>Hard Refresh:</strong> Tekan Ctrl+Shift+R (Windows) atau Cmd+Shift+R (Mac)</li>
+                <li><strong>Clear Cache:</strong> Buka DevTools (F12) → Network tab → Centang "Disable cache" → Refresh</li>
+                <li><strong>Incognito:</strong> Buka window incognito/private baru</li>
+                <li><strong>Cache Buster:</strong> Gunakan URL: http://152.42.199.50/?v=1766162280</li>
+            </ul>
+            <p style="margin-top: 15px; font-weight: bold; color: #00ff88;">✅ Server sudah benar! Hanya perlu clear cache browser.</p>
+        </div>
+    </div>
+</body>
+</html>

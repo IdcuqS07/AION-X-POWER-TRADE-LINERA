@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Horizontal Layout</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #fff;
+            padding: 40px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 20px;
+            padding: 28px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .card h3 {
+            color: #00ff88;
+            margin-bottom: 24px;
+            font-size: 1.4em;
+            font-weight: 700;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.1);
+        }
+        
+        /* Horizontal Layout */
+        .signal-horizontal-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-bottom: 20px;
+        }
+        
+        /* Left Section */
+        .signal-display-section {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .signal {
+            background: transparent;
+            border: none;
+            padding: 0;
+        }
+        
+        .signal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .signal-header strong {
+            font-size: 1.3em;
+            color: #00ff88;
+        }
+        
+        .signal-header span {
+            font-size: 1.1em;
+            color: #00ccff;
+        }
+        
+        .signal-metric {
+            margin-bottom: 15px;
+        }
+        
+        .metric-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #00ff88, #00ccff);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .signal-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 1.1em;
+        }
+        
+        /* Right Section */
+        .signal-controls-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            justify-content: center;
+        }
+        
+        .controls-label {
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: -8px;
+        }
+        
+        .coin-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .coin-btn {
+            padding: 14px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-weight: 600;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .coin-btn .coin-icon {
+            font-size: 1.4em;
+            opacity: 0.8;
+        }
+        
+        .coin-btn.active {
+            background: linear-gradient(135deg, #00ff88, #00ccff);
+            color: #000;
+            border-color: #00ff88;
+            box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
+        }
+        
+        .coin-btn.active .coin-icon {
+            opacity: 1;
+        }
+        
+        .coin-btn:hover:not(.active) {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: rgba(0, 255, 136, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .btn-generate-signal {
+            width: 100%;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 1em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-generate-signal:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+        
+        .btn-generate-signal .btn-icon {
+            font-size: 1.3em;
+        }
+        
+        @media (max-width: 1024px) {
+            .signal-horizontal-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .info-box {
+            background: rgba(0, 136, 255, 0.1);
+            border: 1px solid rgba(0, 136, 255, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .info-box h4 {
+            color: #0088ff;
+            margin-bottom: 10px;
+        }
+        
+        .info-box ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .info-box li {
+            padding: 5px 0;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .info-box li:before {
+            content: "✓ ";
+            color: #00ff88;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="info-box">
+            <h4>🎯 Horizontal Layout Test - AI Trading Signal Card</h4>
+            <ul>
+                <li>Layout: 2-column grid (2fr left + 1fr right)</li>
+                <li>Left: Signal display with metrics and progress bars</li>
+                <li>Right: Coin selector (2x2 grid) + Generate button</li>
+                <li>Responsive: Stacks vertically on mobile (<1024px)</li>
+                <li>Icons: ₿ (BTC), Ξ (ETH), ◎ (SOL), ◆ (BNB)</li>
+            </ul>
+        </div>
+        
+        <div class="card">
+            <h3>🧠 AI Trading Signal</h3>
+            
+            <!-- Horizontal Layout: Signal Info + Controls -->
+            <div class="signal-horizontal-layout">
+                <!-- Left: Signal Display -->
+                <div class="signal-display-section">
+                    <div class="signal">
+                        <div class="signal-header">
+                            <strong>BUY BNB</strong>
+                            <span>87.5%</span>
+                        </div>
+                        <div class="signal-metric">
+                            <div class="metric-label">
+                                <span>Confidence</span>
+                                <span>87.5%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 87.5%"></div>
+                            </div>
+                        </div>
+                        <div class="signal-metric">
+                            <div class="metric-label">
+                                <span>Risk Score</span>
+                                <span>45/100</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 45%"></div>
+                            </div>
+                        </div>
+                        <div class="signal-detail">
+                            <span>Target Price</span>
+                            <span>$645.32</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right: Controls -->
+                <div class="signal-controls-section">
+                    <div class="controls-label">Select Coin</div>
+                    <div class="coin-selector">
+                        <div class="coin-btn">
+                            <span class="coin-icon">₿</span>
+                            <span>BTC</span>
+                        </div>
+                        <div class="coin-btn">
+                            <span class="coin-icon">Ξ</span>
+                            <span>ETH</span>
+                        </div>
+                        <div class="coin-btn">
+                            <span class="coin-icon">◎</span>
+                            <span>SOL</span>
+                        </div>
+                        <div class="coin-btn active">
+                            <span class="coin-icon">◆</span>
+                            <span>BNB</span>
+                        </div>
+                    </div>
+                    
+                    <button class="btn-generate-signal">
+                        <span class="btn-icon">🎯</span>
+                        <span>Generate Signal</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-box" style="margin-top: 20px; background: rgba(0, 255, 136, 0.1); border-color: rgba(0, 255, 136, 0.3);">
+            <h4 style="color: #00ff88;">✅ Deployment Status</h4>
+            <ul>
+                <li>Files uploaded to VPS: /var/www/html/</li>
+                <li>Nginx restarted and cache cleared</li>
+                <li>URL: http://152.42.199.50</li>
+                <li>Build: JS 231.16 kB, CSS 17.53 kB</li>
+                <li>To see changes: Press Ctrl+Shift+R (hard refresh)</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        // Add interactivity
+        document.querySelectorAll('.coin-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.coin-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+        
+        document.querySelector('.btn-generate-signal').addEventListener('click', function() {
+            alert('✅ Layout test successful!\n\nThis is how the horizontal layout looks on the production site.\n\nTo see it live:\n1. Go to http://152.42.199.50\n2. Press Ctrl+Shift+R to hard refresh');
+        });
+    </script>
+</body>
+</html>
