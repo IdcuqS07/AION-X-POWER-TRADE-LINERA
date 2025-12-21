@@ -583,6 +583,65 @@
         </div>
     </div>
 
+    <!-- Trade Confirmation Modal -->
+    <div class="modal-overlay hidden" id="trade-confirm-modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-icon">⚡</div>
+                <h3>Confirm Trade Execution</h3>
+                <button class="modal-close" id="trade-confirm-modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">Review your trade details before execution</p>
+                
+                <div class="trade-confirm-details">
+                    <div class="trade-detail-row">
+                        <span class="trade-detail-label">Signal</span>
+                        <span class="trade-detail-value" id="confirm-signal">-</span>
+                    </div>
+                    <div class="trade-detail-row">
+                        <span class="trade-detail-label">Amount</span>
+                        <span class="trade-detail-value" id="confirm-amount">-</span>
+                    </div>
+                    <div class="trade-detail-row">
+                        <span class="trade-detail-label">Price</span>
+                        <span class="trade-detail-value" id="confirm-price">-</span>
+                    </div>
+                    <div class="trade-detail-row">
+                        <span class="trade-detail-label">Confidence</span>
+                        <span class="trade-detail-value" id="confirm-confidence">-</span>
+                    </div>
+                    <div class="trade-detail-row">
+                        <span class="trade-detail-label">Risk Score</span>
+                        <span class="trade-detail-value" id="confirm-risk">-</span>
+                    </div>
+                    
+                    <div class="trade-detail-divider"></div>
+                    
+                    <div class="trade-detail-section">
+                        <div class="trade-detail-section-title">Risk Management</div>
+                        <div class="trade-detail-row">
+                            <span class="trade-detail-label">Stop Loss</span>
+                            <span class="trade-detail-value" id="confirm-stop-loss">-</span>
+                        </div>
+                        <div class="trade-detail-row">
+                            <span class="trade-detail-label">Take Profit</span>
+                            <span class="trade-detail-value" id="confirm-take-profit">-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="warning-box" style="margin-top: 20px;">
+                    <strong>⚠️ IMPORTANT:</strong> This transaction will be executed on the Linera blockchain and is irreversible. Please review all details carefully.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="trade-confirm-cancel-btn">Cancel</button>
+                <button class="btn btn-primary" id="trade-confirm-execute-btn">Confirm & Execute Trade</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="/src/main.js"></script>
 </body>
 </html>

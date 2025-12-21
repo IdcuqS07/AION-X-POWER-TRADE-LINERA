@@ -142,7 +142,19 @@ const elements = {
     stopLossPercent: document.getElementById('stop-loss-percent'),
     slLoss: document.getElementById('sl-loss'),
     btnAiTp: document.getElementById('btn-ai-tp'),
-    btnAiSl: document.getElementById('btn-ai-sl')
+    btnAiSl: document.getElementById('btn-ai-sl'),
+    // Trade Confirmation Modal
+    tradeConfirmModalOverlay: document.getElementById('trade-confirm-modal-overlay'),
+    tradeConfirmModalClose: document.getElementById('trade-confirm-modal-close'),
+    confirmSignal: document.getElementById('confirm-signal'),
+    confirmAmount: document.getElementById('confirm-amount'),
+    confirmPrice: document.getElementById('confirm-price'),
+    confirmConfidence: document.getElementById('confirm-confidence'),
+    confirmRisk: document.getElementById('confirm-risk'),
+    confirmStopLoss: document.getElementById('confirm-stop-loss'),
+    confirmTakeProfit: document.getElementById('confirm-take-profit'),
+    tradeConfirmCancelBtn: document.getElementById('trade-confirm-cancel-btn'),
+    tradeConfirmExecuteBtn: document.getElementById('trade-confirm-execute-btn')
 };
 
 // Store full values for copying
@@ -1181,10 +1193,68 @@ function executeAITrade() {
         return;
     }
     
+    // Show confirmation modal instead of executing directly
+    showTradeConfirmationModal();
+}
+
+/**
+ * Show trade confirmation modal
+ */
+function showTradeConfirmationModal() {
+    if (!currentSignal) return;
+    
     // Calculate trade amount based on percentage
     const tradeAmount = (portfolio.totalValue * tradePercentage) / 100;
     
-    updateStatus(elements.globalStatus, `⚡ Executing ${tradePercentage}% trade ($${tradeAmount.toFixed(0)})...`, 'info');
+    // Get risk management values
+    const stopLossPrice = elements.stopLossPrice.value || '-';
+    const stopLossPercent = elements.stopLossPercent.textContent || '-';
+    const takeProfitPrice = elements.takeProfitPrice.value || '-';
+    const takeProfitPercent = elements.takeProfitPercent.textContent || '-';
+    
+    // Populate modal with trade details
+    elements.confirmSignal.innerHTML = `<strong style="color: ${getSignalColor(currentSignal.signal)}">${currentSignal.signal}</strong> ${currentSignal.coin}`;
+    elements.confirmAmount.textContent = `${tradeAmount.toFixed(2)} USDT (${tradePercentage}% of portfolio)`;
+    elements.confirmPrice.textContent = `$${currentSignal.targetPrice.toFixed(2)}`;
+    elements.confirmConfidence.textContent = `${(currentSignal.confidence * 100).toFixed(1)}%`;
+    elements.confirmRisk.textContent = `${currentSignal.riskScore}/100`;
+    elements.confirmStopLoss.textContent = `$${stopLossPrice} (${stopLossPercent})`;
+    elements.confirmTakeProfit.textContent = `$${takeProfitPrice} (${takeProfitPercent})`;
+    
+    // Show modal
+    elements.tradeConfirmModalOverlay.classList.remove('hidden');
+    
+    console.log('📋 Trade confirmation modal shown');
+}
+
+/**
+ * Get signal color based on type
+ */
+function getSignalColor(signal) {
+    switch(signal.toUpperCase()) {
+        case 'BUY': return '#26A69A';
+        case 'SELL': return '#EF5350';
+        case 'HOLD': return '#FF9800';
+        default: return '#FFFFFF';
+    }
+}
+
+/**
+ * Execute trade after confirmation
+ */
+function executeTradeConfirmed() {
+    if (!currentSignal) {
+        alert('No signal to execute');
+        return;
+    }
+    
+    // Hide modal
+    elements.tradeConfirmModalOverlay.classList.add('hidden');
+    
+    // Calculate trade amount based on percentage
+    const tradeAmount = (portfolio.totalValue * tradePercentage) / 100;
+    
+    updateStatus(elements.globalStatus, `⚡ Executing ${tradePercentage}% trade (${tradeAmount.toFixed(0)})...`, 'info');
     
     // Create trade record
     const trade = {
@@ -1210,7 +1280,7 @@ function executeAITrade() {
     updateHistoryEnhanced();
     updatePortfolioStats();
     
-    updateStatus(elements.globalStatus, `✅ Trade executed: ${trade.type} ${trade.coin} (${tradePercentage}% - $${tradeAmount.toFixed(0)})`, 'success');
+    updateStatus(elements.globalStatus, `✅ Trade executed: ${trade.type} ${trade.coin} (${tradePercentage}% - ${tradeAmount.toFixed(0)})`, 'success');
     console.log('⚡ Trade executed:', trade);
     
     // Clear active signal after execution
@@ -1227,6 +1297,16 @@ function executeAITrade() {
     // Disable execute button until new signal
     elements.btnExecute.disabled = true;
 }
+
+/**
+ * Close trade confirmation modal
+ */
+function closeTradeConfirmationModal() {
+    elements.tradeConfirmModalOverlay.classList.add('hidden');
+    console.log('❌ Trade confirmation cancelled');
+}
+
+
 
 /**
  * Update portfolio statistics
@@ -1334,6 +1414,18 @@ elements.btnExecute.addEventListener('click', executeAITrade);
 elements.btnRefreshPortfolio.addEventListener('click', updatePortfolioStats);
 elements.btnCheckNetwork.addEventListener('click', checkNetworkStatus);
 elements.btnClearHistory.addEventListener('click', clearTradeHistory);
+
+// Trade Confirmation Modal Event Listeners
+elements.tradeConfirmModalClose.addEventListener('click', closeTradeConfirmationModal);
+elements.tradeConfirmCancelBtn.addEventListener('click', closeTradeConfirmationModal);
+elements.tradeConfirmExecuteBtn.addEventListener('click', executeTradeConfirmed);
+
+// Close modal on overlay click
+elements.tradeConfirmModalOverlay.addEventListener('click', (e) => {
+    if (e.target === elements.tradeConfirmModalOverlay) {
+        closeTradeConfirmationModal();
+    }
+});
 
 // Coin selector buttons
 document.querySelectorAll('.coin-btn').forEach(btn => {
