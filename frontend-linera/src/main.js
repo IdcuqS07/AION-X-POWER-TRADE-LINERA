@@ -692,8 +692,11 @@ async function initApp() {
                 updateStatus(elements.globalStatus, '✅ Ready to trade!', 'success');
                 elements.btnSignal.disabled = false;
                 
-                // Update faucet status
-                updateFaucetStatus();
+                // Update faucet status (with delay to ensure wallet info is ready)
+                setTimeout(() => {
+                    updateFaucetStatus();
+                    console.log('🎫 Faucet status updated after wallet restore');
+                }, 300);
                 
                 // Update portfolio with balance (with delay to ensure data is ready)
                 await updatePortfolioStats();
@@ -1679,6 +1682,8 @@ elements.stopLossPercent.addEventListener('input', (e) => {
 function updateFaucetStatus() {
     const info = lineraManager.getWalletInfo();
     
+    console.log('🎫 Updating faucet status for:', info.owner);
+    
     if (!info.chainId) {
         elements.btnClaimFaucet.disabled = true;
         elements.faucetStatusText.textContent = 'Connect wallet first';
@@ -1688,11 +1693,13 @@ function updateFaucetStatus() {
     const { canClaim, remainingTime } = faucetManager.canClaim(info.owner);
     
     if (canClaim) {
+        console.log('   ✅ Can claim faucet');
         elements.btnClaimFaucet.disabled = false;
         elements.faucetStatusText.textContent = 'Ready to claim';
         elements.faucetStatus.querySelector('.status-dot').className = 'status-dot ready';
         elements.faucetCooldownContainer.style.display = 'none';
     } else {
+        console.log('   ⏳ Cooldown active:', faucetManager.formatRemainingTime(remainingTime));
         elements.btnClaimFaucet.disabled = true;
         elements.faucetStatusText.textContent = 'Cooldown active';
         elements.faucetStatus.querySelector('.status-dot').className = 'status-dot cooldown';

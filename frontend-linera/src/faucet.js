@@ -15,7 +15,13 @@ export class FaucetManager {
      * Check if user can claim
      */
     canClaim(walletAddress) {
-        const lastClaim = localStorage.getItem(`faucet_claim_${walletAddress}`);
+        // Normalize address to lowercase for consistency
+        const normalizedAddress = walletAddress.toLowerCase();
+        const lastClaim = localStorage.getItem(`faucet_claim_${normalizedAddress}`);
+        
+        console.log('🔍 Checking faucet claim status:');
+        console.log('   Address:', normalizedAddress);
+        console.log('   Last claim:', lastClaim ? new Date(parseInt(lastClaim)).toLocaleString() : 'Never');
         
         if (!lastClaim) {
             return { canClaim: true, remainingTime: 0 };
@@ -27,12 +33,16 @@ export class FaucetManager {
         const elapsed = now - lastClaimTime;
 
         if (elapsed >= cooldownMs) {
+            console.log('   ✅ Cooldown expired, can claim again');
             return { canClaim: true, remainingTime: 0 };
         }
 
+        const remaining = cooldownMs - elapsed;
+        console.log('   ⏳ Cooldown active, remaining:', this.formatRemainingTime(remaining));
+        
         return {
             canClaim: false,
-            remainingTime: cooldownMs - elapsed
+            remainingTime: remaining
         };
     }
 
@@ -63,13 +73,16 @@ export class FaucetManager {
      */
     async claimFromAPI(walletAddress, chainId) {
         try {
+            // Normalize address to lowercase for consistency
+            const normalizedAddress = walletAddress.toLowerCase();
+            
             const response = await fetch(`${this.API_BASE}/api/faucet/claim`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    address: walletAddress,
+                    address: normalizedAddress,
                     chainId: chainId
                 })
             });
@@ -80,8 +93,8 @@ export class FaucetManager {
                 throw new Error(data.error || 'Failed to claim tokens');
             }
 
-            // Record claim time locally
-            localStorage.setItem(`faucet_claim_${walletAddress}`, Date.now().toString());
+            // Record claim time locally with normalized address
+            localStorage.setItem(`faucet_claim_${normalizedAddress}`, Date.now().toString());
 
             return {
                 success: true,
@@ -99,8 +112,11 @@ export class FaucetManager {
      * Simulated claim (fallback)
      */
     async claimSimulated(walletAddress, chainId) {
+        // Normalize address to lowercase for consistency
+        const normalizedAddress = walletAddress.toLowerCase();
+        
         // Check if can claim
-        const { canClaim, remainingTime } = this.canClaim(walletAddress);
+        const { canClaim, remainingTime } = this.canClaim(normalizedAddress);
         
         if (!canClaim) {
             throw new Error(`Please wait ${this.formatRemainingTime(remainingTime)} before claiming again`);
@@ -112,8 +128,8 @@ export class FaucetManager {
                 const success = Math.random() > 0.1; // 90% success rate
                 
                 if (success) {
-                    // Record claim time
-                    localStorage.setItem(`faucet_claim_${walletAddress}`, Date.now().toString());
+                    // Record claim time with normalized address
+                    localStorage.setItem(`faucet_claim_${normalizedAddress}`, Date.now().toString());
                     
                     resolve({
                         success: true,
@@ -132,7 +148,9 @@ export class FaucetManager {
      * Get claim history
      */
     getClaimHistory(walletAddress) {
-        const lastClaim = localStorage.getItem(`faucet_claim_${walletAddress}`);
+        // Normalize address to lowercase for consistency
+        const normalizedAddress = walletAddress.toLowerCase();
+        const lastClaim = localStorage.getItem(`faucet_claim_${normalizedAddress}`);
         
         if (!lastClaim) {
             return null;
@@ -148,7 +166,9 @@ export class FaucetManager {
      * Reset claim (for testing)
      */
     resetClaim(walletAddress) {
-        localStorage.removeItem(`faucet_claim_${walletAddress}`);
+        // Normalize address to lowercase for consistency
+        const normalizedAddress = walletAddress.toLowerCase();
+        localStorage.removeItem(`faucet_claim_${normalizedAddress}`);
     }
 }
 
