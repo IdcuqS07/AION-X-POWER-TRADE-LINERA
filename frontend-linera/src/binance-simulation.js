@@ -79,23 +79,23 @@ export class BinanceSimulation {
         const startTime = Date.now();
         
         try {
-            // Phase 1: Placing order (100-200ms)
+            // Phase 1: Placing order (600-800ms) - Increased for visibility
             if (callbacks.onStatus) {
                 callbacks.onStatus('📤 Placing order on Binance...', 25);
             }
-            await this.delay(this.randomBetween(100, 200));
+            await this.delay(this.randomBetween(600, 800));
             
-            // Phase 2: Order matching (50-100ms)
+            // Phase 2: Order matching (400-600ms) - Increased for visibility
             if (callbacks.onStatus) {
                 callbacks.onStatus('🔄 Matching order...', 50);
             }
-            await this.delay(this.randomBetween(50, 100));
+            await this.delay(this.randomBetween(400, 600));
             
-            // Phase 3: Executing trade (50-100ms)
+            // Phase 3: Executing trade (400-600ms) - Increased for visibility
             if (callbacks.onStatus) {
                 callbacks.onStatus('⚡ Executing trade...', 75);
             }
-            await this.delay(this.randomBetween(50, 100));
+            await this.delay(this.randomBetween(400, 600));
             
             // Calculate execution details
             const execution = this.calculateExecution(signal, tradeAmount);
@@ -104,11 +104,11 @@ export class BinanceSimulation {
             execution.executionTime = ((Date.now() - startTime) / 1000).toFixed(2);
             execution.executionTimeMs = Date.now() - startTime;
             
-            // Phase 4: Order filled (50ms)
+            // Phase 4: Order filled (800ms) - Increased to show success state
             if (callbacks.onStatus) {
                 callbacks.onStatus('✅ Order filled!', 100);
             }
-            await this.delay(50);
+            await this.delay(800);
             
             // Call completion callback
             if (callbacks.onComplete) {
