@@ -897,59 +897,57 @@ function selectCoin(event) {
     const coin = event.target.dataset.coin;
     if (!coin) return;
     
-    // Check if there's an active signal
-    const persistedSignal = signalPersistence.getActiveSignal();
-    
-    // Special case: Clicking the same coin as active signal
-    if (persistedSignal && persistedSignal.coin === coin) {
-        console.log('🔄 Returning to signal coin:', coin);
-        selectedCoin = coin;
-        
-        // Update active state
-        document.querySelectorAll('.coin-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        event.target.classList.add('active');
-        
-        // Restore full signal display
-        activeSignal = persistedSignal;
-        displayActiveSignal();
-        
-        // Update AI Explainer link
-        updateAIExplainerLink();
-        
-        // Update visual indicators
-        updateCoinButtonIndicators();
-        
-        return;
-    }
-    
     selectedCoin = coin;
     
-    // Update UI - FAST, no heavy operations
+    // Update UI - active state
     document.querySelectorAll('.coin-btn').forEach(btn => {
         btn.classList.remove('active');
     });
     event.target.classList.add('active');
     
-    // Update AI Explainer link with selected coin
-    updateAIExplainerLink();
-    
     console.log('💰 Selected coin:', coin);
     
-    // Check if there's an active signal (persistent across coin changes)
-    if (persistedSignal) {
-        console.log('📊 Active signal exists for:', persistedSignal.coin);
-        activeSignal = persistedSignal;
-        // Keep showing the active signal even if different coin selected
-        displayActiveSignal();
+    // Check if this coin has a saved signal (per-coin storage)
+    const coinSignal = signalCooldown.getLastSignal(coin);
+    
+    if (coinSignal && coinSignal.signal) {
+        // This coin has a signal - display it
+        console.log(`📊 Loading saved signal for ${coin}:`, coinSignal.signal);
+        currentSignal = coinSignal.signal;
+        activeSignal = coinSignal.signal;
+        
+        // Display the signal
+        displayCoinSignal(coinSignal.signal);
+        
+        // Show risk management
+        elements.riskManagement.style.display = 'block';
+        
+        // Enable execute button
+        elements.btnExecute.disabled = false;
+        const tradeAmount = (portfolio.totalValue * tradePercentage) / 100;
+        elements.btnExecute.textContent = `Execute ${coinSignal.signal.signal} ${coin} (${tradePercentage}% - $${tradeAmount.toFixed(0)})`;
+    } else {
+        // No signal for this coin - show ready state
+        console.log(`⚪ No signal for ${coin} - showing ready state`);
+        currentSignal = null;
+        activeSignal = null;
+        
+        // Show ready state
+        showReadyState();
+        
+        // Hide risk management
+        elements.riskManagement.style.display = 'none';
+        
+        // Disable execute button
+        elements.btnExecute.disabled = true;
+        elements.btnExecute.textContent = 'Execute AI Trade';
     }
     
-    // Update visual indicators for signal coin
-    updateCoinButtonIndicators();
+    // Update AI Explainer link
+    updateAIExplainerLink();
     
-    // Don't auto-generate - let user click "Generate Signal" button
-    // This makes coin selection instant and responsive
+    // Update visual indicators (highlight coins with signals)
+    updateCoinButtonIndicators();
 }
 
 /**
@@ -963,25 +961,68 @@ function updateAIExplainerLink() {
 }
 
 /**
+ * Display signal for a specific coin
+ */
+function displayCoinSignal(signal) {
+    if (!signal) return;
+    
+    const signalType = signal.signal;
+    const confidence = signal.confidence;
+    const riskScore = signal.riskScore;
+    const targetPrice = signal.targetPrice;
+    const coin = signal.coin;
+    
+    // Update UI
+    elements.currentSignal.className = `signal signal-${signalType.toLowerCase()}`;
+    elements.signalAction.innerHTML = `${signalType} <span class="coin-badge">${coin}</span>`;
+    elements.signalConfidence.textContent = `${(confidence * 100).toFixed(1)}%`;
+    elements.confidenceText.textContent = `${(confidence * 100).toFixed(1)}%`;
+    elements.confidenceBar.style.width = `${confidence * 100}%`;
+    elements.riskText.textContent = `${riskScore}/100`;
+    elements.riskBar.style.width = `${riskScore}%`;
+    elements.targetPrice.textContent = `$${targetPrice.toFixed(2)}`;
+    
+    console.log(`✅ Displayed signal for ${coin}:`, signalType);
+}
+
+/**
+ * Show ready state (no signal)
+ */
+function showReadyState() {
+    elements.currentSignal.className = 'signal signal-hold';
+    elements.signalAction.innerHTML = `Ready`;
+    elements.signalConfidence.textContent = '-';
+    elements.confidenceText.textContent = '-';
+    elements.confidenceBar.style.width = '0%';
+    elements.riskText.textContent = '-';
+    elements.riskBar.style.width = '0%';
+    elements.targetPrice.textContent = '-';
+    
+    console.log('⚪ Showing ready state');
+}
+
+/**
  * Update coin button visual indicators
  * Highlights the coin that has an active signal
  */
 function updateCoinButtonIndicators() {
-    const persistedSignal = signalPersistence.getActiveSignal();
-    
     // Remove all signal indicators
     document.querySelectorAll('.coin-btn').forEach(btn => {
         btn.classList.remove('has-active-signal');
     });
     
-    // Add indicator to coin with active signal
-    if (persistedSignal) {
-        const signalCoinBtn = document.querySelector(`.coin-btn[data-coin="${persistedSignal.coin}"]`);
-        if (signalCoinBtn) {
-            signalCoinBtn.classList.add('has-active-signal');
-            console.log(`✨ Highlighted ${persistedSignal.coin} button with active signal`);
+    // Add indicator to all coins with signals
+    const allCoins = ['BTC', 'ETH', 'SOL', 'BNB'];
+    allCoins.forEach(coin => {
+        const coinSignal = signalCooldown.getLastSignal(coin);
+        if (coinSignal && coinSignal.signal) {
+            const coinBtn = document.querySelector(`.coin-btn[data-coin="${coin}"]`);
+            if (coinBtn) {
+                coinBtn.classList.add('has-active-signal');
+                console.log(`✨ Highlighted ${coin} button (has signal)`);
+            }
         }
-    }
+    });
 }
 
 /**
@@ -1070,7 +1111,7 @@ function generateSignalEnhanced() {
     // Generate REAL AI signal using technical analysis
     const generatedSignal = generateRealSignal(selectedCoin, currentPrice, aiExplainer, info);
     currentSignal = generatedSignal;
-    activeSignal = signalPersistence.saveActiveSignal(generatedSignal, selectedCoin);
+    activeSignal = generatedSignal; // Set as active signal
     const signal = currentSignal.signal;
     const confidence = currentSignal.confidence;
     const riskScore = currentSignal.riskScore;
@@ -1081,7 +1122,7 @@ function generateSignalEnhanced() {
     
     // Update UI
     elements.currentSignal.className = `signal signal-${signal.toLowerCase()}`;
-    elements.signalAction.textContent = `${signal} ${selectedCoin}`;
+    elements.signalAction.innerHTML = `${signal} <span class="coin-badge">${selectedCoin}</span>`;
     elements.signalConfidence.textContent = `${(confidence * 100).toFixed(1)}%`;
     elements.confidenceText.textContent = `${(confidence * 100).toFixed(1)}%`;
     elements.confidenceBar.style.width = `${confidence * 100}%`;
@@ -1173,7 +1214,7 @@ function executeAITrade() {
     console.log('⚡ Trade executed:', trade);
     
     // Clear active signal after execution
-    signalPersistence.clearActiveSignal();
+    // Signal cleared (stored per-coin in signalCooldown)
     activeSignal = null;
     currentSignal = null;
     
@@ -1723,7 +1764,7 @@ generateSignalEnhanced = function() {
     // Generate REAL AI signal using technical analysis
     const generatedSignal = generateRealSignal(selectedCoin, currentPrice, aiExplainer, info);
     currentSignal = generatedSignal;
-    activeSignal = signalPersistence.saveActiveSignal(generatedSignal, selectedCoin);
+    activeSignal = generatedSignal; // Set as active signal
     const signal = currentSignal.signal;
     const confidence = currentSignal.confidence;
     const riskScore = currentSignal.riskScore;
@@ -1734,7 +1775,7 @@ generateSignalEnhanced = function() {
     
     // Update UI
     elements.currentSignal.className = `signal signal-${signal.toLowerCase()}`;
-    elements.signalAction.textContent = `${signal} ${selectedCoin}`;
+    elements.signalAction.innerHTML = `${signal} <span class="coin-badge">${selectedCoin}</span>`;
     elements.signalConfidence.textContent = `${(confidence * 100).toFixed(1)}%`;
     elements.confidenceText.textContent = `${(confidence * 100).toFixed(1)}%`;
     elements.confidenceBar.style.width = `${confidence * 100}%`;
@@ -1879,7 +1920,7 @@ executeAITrade = function() {
     console.log('⚡ Trade executed:', trade);
     
     // Clear active signal after execution
-    signalPersistence.clearActiveSignal();
+    // Signal cleared (stored per-coin in signalCooldown)
     activeSignal = null;
     currentSignal = null;
     
