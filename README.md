@@ -505,6 +505,25 @@ export class PlatformManager {
 4. **Verify Transactions** - Check before confirming
 5. **Keep Software Updated** - Use latest version
 
+## 🐛 Known Issues
+
+### Linera Testnet Limitation
+Currently, complex smart contracts cannot be deployed to Linera Conway Testnet due to WASM opcode limitations. The platform operates in **simulation mode** with full functionality while we wait for testnet stability.
+
+**Status:** 🔴 Open (External - Testnet Infrastructure)
+
+**What Works:**
+- ✅ Wallet integration via Linera WASM SDK
+- ✅ All UI features and trading functionality
+- ✅ Simulated balance and transaction tracking
+- ✅ Smart contract code ready for deployment
+
+**What's Affected:**
+- ❌ On-chain smart contract deployment to testnet
+- ✅ Simple contracts (like counter) work fine
+
+**Details:** See [KNOWN-ISSUES.md](./KNOWN-ISSUES.md) and [Bug Report](./LINERA-TESTNET-BUG-REPORT.md)
+
 ## 🚧 Roadmap
 
 ### Phase 1: Core Features ✅ (Completed)
