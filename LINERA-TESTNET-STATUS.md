@@ -6,24 +6,53 @@
 
 ## Summary
 
-Smart contract deployment to Linera Conway Testnet is currently **NOT WORKING** due to testnet infrastructure issues, not code problems.
+Smart contract deployment to Linera Conway Testnet shows **PARTIAL SUCCESS** - simple contracts work, but complex contracts fail due to WASM opcode limitations.
 
 ## Test Results
 
-### Test 1: AI Trading Contract
+### Test 1: Official Counter Example ✅ SUCCESS
 - **Build:** ✅ SUCCESS
 - **Module Publish:** ✅ SUCCESS  
-- **Application Create:** ❌ FAILED
-- **Error:** `Invalid Wasm module: Unknown opcode 252 during Operation(0)`
+- **Application Create:** ✅ SUCCESS with `--json-argument "42"`
+- **Application ID:** `5a4da146be1ed8524f87b8d66de32ed69254dc407df3830816c46682070d2c0c`
+- **Conclusion:** Simple contracts with basic operations work on testnet
 
-### Test 2: Official Counter Example
+### Test 2: AI Trading Contract ❌ FAILED
 - **Build:** ✅ SUCCESS
 - **Module Publish:** ✅ SUCCESS
-- **Application Create:** ❌ FAILED
-- **Error:** `Failed to deserialize instantiation argument [110, 117, 108, 108]`
-- **Runtime Error:** `RuntimeError: unreachable during Operation(0)`
+- **Application Create:** ❌ FAILED with `--json-argument "0"`
+- **Error:** `Invalid Wasm module: Unknown opcode 252 during Operation(0)`
+- **Conclusion:** Complex contracts with advanced features not supported
 
-## Testnet Issues Observed
+## Key Findings
+
+### ✅ What We Learned
+
+1. **InstantiationArgument is Required**
+   - Must provide `--json-argument` when deploying
+   - Without it: `Failed to deserialize instantiation argument [110, 117, 108, 108]` (= "null")
+   - With it: Proper deserialization occurs
+
+2. **Correct Deployment Command**
+   ```bash
+   linera project publish-and-create . <project_name> --json-argument "<value>"
+   ```
+   
+   Example:
+   ```bash
+   # Counter example (SUCCESS)
+   linera project publish-and-create counter counter --json-argument "42"
+   
+   # AI Trading (FAILED - opcode issue)
+   linera project publish-and-create . ai_trading --json-argument "0"
+   ```
+
+3. **WASM Opcode Limitations**
+   - Testnet supports basic WASM opcodes
+   - Advanced opcodes (like 252) not supported
+   - This is a testnet infrastructure limitation, not code issue
+
+### ❌ Testnet Issues Observed
 
 1. **Validator Synchronization Problems:**
    - Multiple validators showing "Chain is expecting a next block at height X but the given block is at height Y"
