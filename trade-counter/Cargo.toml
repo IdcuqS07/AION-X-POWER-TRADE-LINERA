@@ -1,0 +1,21 @@
+[package]
+name = "trade-counter"
+version = "0.1.0"
+authors = ["AION-X"]
+edition = "2021"
+
+[workspace]
+
+[dependencies]
+async-graphql = "7.0.17"
+futures = "0.3"
+linera-sdk = "0.15.7"
+serde_json = "1.0"
+
+[[bin]]
+name = "trade_counter_contract"
+path = "src/contract.rs"
+
+[[bin]]
+name = "trade_counter_service"
+path = "src/service.rs"
