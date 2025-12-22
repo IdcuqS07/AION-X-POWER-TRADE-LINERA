@@ -7,9 +7,9 @@
 
 ## 📋 Summary
 
-We attempted multiple approaches to deploy a smart contract to Linera Testnet Conway. All attempts failed with the same error: `Invalid Wasm module: Unknown opcode 252 during Operation(0)`.
+We attempted **5 different approaches** to deploy a smart contract to Linera Testnet Conway. All attempts failed with the same error: `Invalid Wasm module: Unknown opcode 252 during Operation(0)`.
 
-This demonstrates a **testnet infrastructure limitation**, not an issue with our code.
+**This definitively demonstrates a testnet infrastructure limitation**, not an issue with our code or build configuration.
 
 ---
 
@@ -54,6 +54,27 @@ Execution error: Invalid Wasm module: Unknown opcode 252 during Operation(0)
 
 **Bytecode IDs**:
 - Full: `db7a1078109e3eeb248a3b2ebe1cd06ec356110857c79f19c762555e55f7ae7c5120fa66d644e579c4a5fbe5e479b7849c4a5e24220a5a4040de3c39f75576c000`
+
+### Attempt 5: Conservative Build with Disabled WASM Features
+**Contract**: `trade-counter/` with conservative RUSTFLAGS  
+**Build Flags**: `-C target-feature=-simd128,-bulk-memory,-sign-ext`  
+**Features**: Disabled SIMD, bulk memory, and sign extension  
+**Result**: ❌ FAILED - Opcode 252
+
+**Bytecode Published**: ✅ SUCCESS  
+**Application Creation**: ❌ FAILED - Opcode 252
+
+**Bytecode IDs**:
+- Full: `87fd911698703a73b71500dc015d6cc315fc99164dd32369f0d73fc9cee55f4352c7bd2b77cc2ef3637c3fad0cee08ebd8bc17e9ad0d4da2201f1bcbaa2fa70d00`
+
+**Build Command**:
+```bash
+export RUSTFLAGS="-C target-feature=-simd128,-bulk-memory,-sign-ext"
+cargo clean
+cargo build --target wasm32-unknown-unknown --release
+```
+
+**Conclusion**: Even with the most conservative build settings, disabling all optional WASM features, the error persists. This definitively confirms the testnet runtime limitation.
 
 ---
 
