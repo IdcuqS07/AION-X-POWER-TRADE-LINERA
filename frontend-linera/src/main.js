@@ -12,6 +12,7 @@ import SignalCooldownManager from './signal-cooldown.js';
 import WalletManager from './wallet-manager.js';
 import SignalPersistenceManager from './signal-persistence.js';
 import { binanceSimulation } from './binance-simulation.js';
+import TradeCounterContract, { initializeContractIntegration, displayContractStats } from './trade-counter-contract.js';
 
 // Initialize managers
 const lineraManager = new LineraManager();
@@ -21,6 +22,10 @@ const faucetManager = new FaucetManager();
 const signalCooldown = new SignalCooldownManager();
 const walletManager = new WalletManager();
 const signalPersistence = new SignalPersistenceManager();
+
+// Smart contract integration (will be initialized after wallet connection)
+let tradeCounterContract = null;
+let contractUnsubscribe = null;
 
 // DOM Elements
 const elements = {
@@ -489,10 +494,21 @@ async function createWalletFromDropdown() {
         
         // Try to create client in background
         elements.loadingStep3.classList.add('active');
-        lineraManager.createClient().then(() => {
+        lineraManager.createClient().then(async () => {
             console.log('✅ Client connected');
             updateStatus(elements.walletStatus, '✅ Fully connected!', 'success');
             elements.dropdownStatus.textContent = 'Fully Connected';
+            
+            // Initialize smart contract integration
+            try {
+                console.log('🔗 Initializing smart contract integration...');
+                const contractIntegration = await initializeContractIntegration(walletInfo);
+                tradeCounterContract = contractIntegration.contract;
+                contractUnsubscribe = contractIntegration.unsubscribe;
+                console.log('✅ Smart contract integration ready!');
+            } catch (error) {
+                console.warn('⚠️ Contract integration failed (app still works):', error);
+            }
             
             // Show connected state
             setTimeout(() => {
@@ -1336,6 +1352,16 @@ async function executeTradeConfirmed() {
         // Update displays
         updateHistoryEnhanced();
         updatePortfolioStats();
+        
+        // Increment on-chain trade counter
+        if (tradeCounterContract) {
+            tradeCounterContract.incrementTradeCount().then(success => {
+                if (success) {
+                    console.log('✅ On-chain trade counter updated!');
+                    displayContractStats(tradeCounterContract);
+                }
+            }).catch(err => console.warn('⚠️ Failed to update on-chain counter:', err));
+        }
         
         // Show success message with execution details
         updateStatus(
@@ -2407,3 +2433,23 @@ elements.importModalOverlay.addEventListener('click', (e) => {
 });
 elements.importCancelBtn.addEventListener('click', hideImportModal);
 elements.importConfirmBtn.addEventListener('click', importWallet);
+
+
+/**
+ * Helper: Increment on-chain signal counter
+ */
+function incrementOnChainSignalCounter() {
+    if (tradeCounterContract) {
+        tradeCounterContract.incrementSignalCount()
+            .then(success => {
+                if (success) {
+                    console.log('✅ On-chain signal counter updated!');
+                    displayContractStats(tradeCounterContract);
+                }
+            })
+            .catch(err => console.warn('⚠️ Failed to update on-chain signal counter:', err));
+    }
+}
+
+// Call this after signal generation
+// Add after: signalCooldown.saveSignal(selectedCoin, currentSignal);
