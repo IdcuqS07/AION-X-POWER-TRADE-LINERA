@@ -1,0 +1,152 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║                   CLOUDFLARE DNS UPDATE GUIDE                        ║
+║                         aion-x.xyz                                   ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────────┐
+│  CURRENT DNS (OLD - Pointing to Vercel)                              │
+└──────────────────────────────────────────────────────────────────────┘
+
+   aion-x.xyz  ──────────────────────────────────────────────────────┐
+   (A Record)                                                         │
+   Content: 216.198.79.1                                              │
+                                                                      │
+                                                                      ▼
+   www.aion-x.xyz  ──────────────────────────────────────────────────┐
+   (CNAME)                                                            │
+   Content: bbc0df20c94445fa.vercel-dns-017.com                       │
+                                                                      │
+                                                                      ▼
+                                                                      
+                        ┌─────────────────┐
+                        │  VERCEL SERVER  │
+                        │  216.198.79.1   │
+                        │   (OLD PROJECT) │
+                        └─────────────────┘
+                                ❌
+
+
+┌──────────────────────────────────────────────────────────────────────┐
+│  NEW DNS (CHANGE TO - Pointing to Your VPS)                          │
+└──────────────────────────────────────────────────────────────────────┘
+
+   aion-x.xyz  ──────────────────────────────────────────────────────┐
+   (A Record)                                                         │
+   Content: 152.42.199.50  ← CHANGE THIS                              │
+   Proxy: OFF (gray cloud ☁️)                                         │
+                                                                      │
+                                                                      ▼
+   www.aion-x.xyz  ──────────────────────────────────────────────────┐
+   (CNAME)                                                            │
+   Content: aion-x.xyz  ← CHANGE THIS                                 │
+   Proxy: OFF (gray cloud ☁️)                                         │
+                                                                      │
+                                                                      ▼
+                                                                      
+                        ┌─────────────────┐
+                        │   YOUR VPS      │
+                        │ 152.42.199.50   │
+                        │ AI POWER TRADE  │
+                        └─────────────────┘
+                                ✅
+
+
+╔══════════════════════════════════════════════════════════════════════╗
+║                        STEP-BY-STEP ACTIONS                          ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+┌─ STEP 1: Update A Record ────────────────────────────────────────────┐
+│                                                                       │
+│  In Cloudflare DNS dashboard:                                        │
+│                                                                       │
+│  1. Find: Type = A, Name = aion-x.xyz (or @)                         │
+│  2. Click: Edit button                                               │
+│  3. Change Content:                                                  │
+│     FROM: 216.198.79.1                                               │
+│     TO:   152.42.199.50                                              │
+│  4. Set Proxy: OFF (gray cloud ☁️)                                   │
+│  5. Click: Save                                                      │
+│                                                                       │
+└───────────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 2: Update CNAME Record ────────────────────────────────────────┐
+│                                                                       │
+│  In Cloudflare DNS dashboard:                                        │
+│                                                                       │
+│  1. Find: Type = CNAME, Name = www                                   │
+│  2. Click: Edit button                                               │
+│  3. Change Content:                                                  │
+│     FROM: bbc0df20c94445fa.vercel-dns-017.com                        │
+│     TO:   aion-x.xyz                                                 │
+│  4. Set Proxy: OFF (gray cloud ☁️)                                   │
+│  5. Click: Save                                                      │
+│                                                                       │
+└───────────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 3: Wait for DNS Propagation ───────────────────────────────────┐
+│                                                                       │
+│  Time: 1-5 minutes (Cloudflare is fast!)                             │
+│                                                                       │
+│  Check with:                                                         │
+│  $ dig aion-x.xyz +short                                             │
+│  Should return: 152.42.199.50                                        │
+│                                                                       │
+└───────────────────────────────────────────────────────────────────────┘
+
+┌─ STEP 4: Install SSL Certificate ────────────────────────────────────┐
+│                                                                       │
+│  Run this command:                                                   │
+│  $ ./check-and-setup-ssl.sh                                          │
+│                                                                       │
+│  This will:                                                          │
+│  ✅ Verify DNS is correct                                            │
+│  ✅ Install SSL certificate (Let's Encrypt)                          │
+│  ✅ Configure HTTPS redirect                                         │
+│  ✅ Make site live at https://www.aion-x.xyz                         │
+│                                                                       │
+└───────────────────────────────────────────────────────────────────────┘
+
+
+╔══════════════════════════════════════════════════════════════════════╗
+║                          IMPORTANT NOTES                             ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+⚠️  PROXY MUST BE OFF (GRAY CLOUD)
+
+    Orange cloud 🟠 = Cloudflare Proxy ON
+    ├─ Blocks SSL certificate verification
+    └─ SSL setup will FAIL
+
+    Gray cloud ☁️ = DNS Only
+    ├─ Allows direct connection to VPS
+    └─ SSL setup will SUCCEED ✅
+
+    💡 You can enable proxy AFTER SSL is installed
+
+
+╔══════════════════════════════════════════════════════════════════════╗
+║                          FINAL RESULT                                ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+After DNS update + SSL installation:
+
+✅ https://aion-x.xyz          → AI Power Trade (secure)
+✅ https://www.aion-x.xyz      → AI Power Trade (secure)
+✅ http://aion-x.xyz           → Redirects to HTTPS
+✅ http://www.aion-x.xyz       → Redirects to HTTPS
+
+🔒 Secure padlock icon in browser
+🚀 Professional custom domain for hackathon
+🎉 Full control over deployment
+
+
+╔══════════════════════════════════════════════════════════════════════╗
+║                        READY TO START?                               ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+1. Open Cloudflare DNS dashboard
+2. Update 2 records (see STEP 1 & 2 above)
+3. Wait 1-5 minutes
+4. Run: ./check-and-setup-ssl.sh
+
+Good luck! 🚀

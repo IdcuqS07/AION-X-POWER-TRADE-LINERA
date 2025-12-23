@@ -2,9 +2,10 @@
 
 > **AI-powered trading platform combining Linera blockchain with CEX/DEX integration for intelligent automated trading**
 
-[![Live Demo](https://img.shields.io/badge/Live-Demo-00ff88?style=for-the-badge)](http://152.42.199.50)
+[![Live Demo](https://img.shields.io/badge/Live-Demo-00ff88?style=for-the-badge)](https://www.aion-x.xyz)
 [![Linera](https://img.shields.io/badge/Linera-Testnet-blue?style=for-the-badge)](https://linera.io)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
+[![HTTPS](https://img.shields.io/badge/HTTPS-Secure-green?style=for-the-badge)](https://www.aion-x.xyz)
 
 ## 🎯 Overview
 
@@ -122,7 +123,7 @@ AI Power Trade is a next-generation decentralized trading platform that seamless
 
 ### For Users (Try the Live Demo)
 
-1. **Visit**: http://152.42.199.50
+1. **Visit**: https://www.aion-x.xyz 🔒
 2. **Connect Wallet**: Click "Connect Wallet" → "Create New Wallet"
 3. **Get Testnet Tokens**: Click "Claim Test Tokens" (100 LINERA)
 4. **Connect Platform**: Click "Connect Platform" button
@@ -172,8 +173,9 @@ npm run build
 # Build
 npm run build
 
-# Deploy to VPS
+# Deploy to production domain
 scp -r dist/* root@152.42.199.50:/var/www/ai-power-trade/
+# Live at: https://www.aion-x.xyz
 ```
 
 ### Setup Faucet Backend (Optional)
@@ -467,9 +469,12 @@ export class PlatformManager {
 ## 🌐 Live Demo & Resources
 
 ### Live Application
-- **Frontend**: http://152.42.199.50
+- **Production**: https://www.aion-x.xyz 🔒
+- **Alternative**: https://aion-x.xyz
 - **Status**: ✅ Live and operational
+- **Security**: SSL/TLS encrypted (Let's Encrypt)
 - **Uptime**: 24/7 on VPS
+- **CDN**: Cloudflare DNS
 
 ### Blockchain Resources
 - **Network**: Linera Testnet Conway
@@ -627,7 +632,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ### Get Help
 - **GitHub Issues**: [Report bugs or request features](https://github.com/IdcuqS07/AION-X-POWER-TRADE-LINERA/issues)
 - **Email**: idchuq@gmail.com
-- **Live Demo**: http://152.42.199.50
+- **Live Demo**: https://www.aion-x.xyz
 
 ### Links
 - **Repository**: https://github.com/IdcuqS07/AION-X-POWER-TRADE-LINERA
@@ -687,9 +692,10 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 [![GitHub forks](https://img.shields.io/github/forks/IdcuqS07/AION-X-POWER-TRADE-LINERA?style=social)](https://github.com/IdcuqS07/AION-X-POWER-TRADE-LINERA/fork)
 
 **Status**: ✅ Live and Operational  
-**Last Updated**: December 21, 2025  
-**Version**: 1.0.0
+**Last Updated**: December 23, 2025  
+**Version**: 1.0.0  
+**Domain**: https://www.aion-x.xyz 🔒
 
-[🚀 Try Live Demo](http://152.42.199.50) | [📖 Documentation](README.md) | [🐛 Report Bug](https://github.com/IdcuqS07/AION-X-POWER-TRADE-LINERA/issues)
+[🚀 Try Live Demo](https://www.aion-x.xyz) | [📖 Documentation](README.md) | [🐛 Report Bug](https://github.com/IdcuqS07/AION-X-POWER-TRADE-LINERA/issues)
 
 </div>
