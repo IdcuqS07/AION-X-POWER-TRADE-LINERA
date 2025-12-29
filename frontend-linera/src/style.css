@@ -122,6 +122,23 @@
             color: #EF5350;
         }
 
+        /* Blockchain Stats */
+        .blockchain-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+
+        .blockchain-stats .stat-item {
+            background: linear-gradient(135deg, #1E222D 0%, #2A2E39 100%);
+            border: 1px solid #2962FF33;
+        }
+
+        .blockchain-stats .stat-value {
+            color: #2962FF;
+        }
+
         /* Portfolio Grid */
         .portfolio-grid {
             display: grid;

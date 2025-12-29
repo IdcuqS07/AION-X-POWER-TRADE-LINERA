@@ -433,6 +433,25 @@
                     <button class="btn btn-danger" id="btn-clear-history">Clear History</button>
                 </div>
 
+                <!-- Blockchain Trade History Card -->
+                <div class="card">
+                    <h3 class="card-title">⛓️ Blockchain Trade History</h3>
+                    <div class="blockchain-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Total On-Chain Trades</span>
+                            <span class="stat-value" id="blockchain-total-trades">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Your Total P&L</span>
+                            <span class="stat-value" id="blockchain-total-pnl">-</span>
+                        </div>
+                    </div>
+                    <div class="trade-history" id="blockchain-history-container">
+                        <div class="status info">Connect wallet to view blockchain history</div>
+                    </div>
+                    <button class="btn btn-secondary" id="btn-refresh-blockchain">🔄 Refresh from Blockchain</button>
+                </div>
+
                 <!-- Trading Platform Card -->
                 <div class="card">
                     <h3 class="card-title">🏦 Trading Platform</h3>

@@ -1,0 +1,8 @@
+[project]
+name = "trade-history"
+
+[contract]
+path = "target/wasm32-unknown-unknown/release/trade_history_contract.wasm"
+
+[service]
+path = "target/wasm32-unknown-unknown/release/trade_history_service.wasm"

@@ -13,6 +13,7 @@ import WalletManager from './wallet-manager.js';
 import SignalPersistenceManager from './signal-persistence.js';
 import { binanceSimulation } from './binance-simulation.js';
 import TradeCounterContract, { initializeContractIntegration, displayContractStats } from './trade-counter-contract.js';
+import { tradeHistoryContract } from './trade-history-contract.js';
 
 // Initialize managers
 const lineraManager = new LineraManager();
@@ -127,6 +128,11 @@ const elements = {
     deployedApps: document.getElementById('deployed-apps'),
     btnCheckNetwork: document.getElementById('btn-check-network'),
     btnClearHistory: document.getElementById('btn-clear-history'),
+    // Blockchain history
+    blockchainHistoryContainer: document.getElementById('blockchain-history-container'),
+    blockchainTotalTrades: document.getElementById('blockchain-total-trades'),
+    blockchainTotalPnl: document.getElementById('blockchain-total-pnl'),
+    btnRefreshBlockchain: document.getElementById('btn-refresh-blockchain'),
     // Trade percentage
     tradePercentageSlider: document.getElementById('trade-percentage-slider'),
     tradePercentage: document.getElementById('trade-percentage'),
@@ -506,6 +512,13 @@ async function createWalletFromDropdown() {
                 tradeCounterContract = contractIntegration.contract;
                 contractUnsubscribe = contractIntegration.unsubscribe;
                 console.log('✅ Smart contract integration ready!');
+                
+                // Initialize trade history contract
+                await tradeHistoryContract.initialize(walletInfo.chainId, walletInfo.owner);
+                console.log('✅ Trade history contract ready!');
+                
+                // Display blockchain history
+                await displayBlockchainHistory();
             } catch (error) {
                 console.warn('⚠️ Contract integration failed (app still works):', error);
             }
@@ -780,6 +793,17 @@ async function initApp() {
                 elements.targetPrice = document.getElementById('target-price');
                 
                 console.log('✅ Wallet restored successfully');
+                
+                // Initialize trade history contract
+                try {
+                    await tradeHistoryContract.initialize(savedChainId, savedOwner);
+                    console.log('✅ Trade history contract initialized after restore');
+                    
+                    // Display blockchain history
+                    await displayBlockchainHistory();
+                } catch (error) {
+                    console.warn('⚠️ Trade history contract init failed:', error);
+                }
                 
                 // Try to create client in background
                 lineraManager.createClient().then(() => {
@@ -1363,6 +1387,23 @@ async function executeTradeConfirmed() {
             }).catch(err => console.warn('⚠️ Failed to update on-chain counter:', err));
         }
         
+        // Save complete trade data to blockchain
+        try {
+            await tradeHistoryContract.executeTrade(
+                trade.coin,
+                trade.type,
+                execution.executionPrice,
+                execution.executionPrice, // Exit price same as entry for now
+                execution.coinAmount
+            );
+            console.log('✅ Trade saved to blockchain!');
+            
+            // Refresh blockchain history display
+            await displayBlockchainHistory();
+        } catch (err) {
+            console.warn('⚠️ Failed to save trade to blockchain:', err);
+        }
+        
         // Show success message with execution details
         updateStatus(
             elements.globalStatus, 
@@ -1527,6 +1568,7 @@ elements.btnExecute.addEventListener('click', executeAITrade);
 elements.btnRefreshPortfolio.addEventListener('click', updatePortfolioStats);
 elements.btnCheckNetwork.addEventListener('click', checkNetworkStatus);
 elements.btnClearHistory.addEventListener('click', clearTradeHistory);
+elements.btnRefreshBlockchain.addEventListener('click', displayBlockchainHistory);
 
 // Trade Confirmation Modal Event Listeners
 elements.tradeConfirmModalClose.addEventListener('click', closeTradeConfirmationModal);
@@ -2448,6 +2490,75 @@ function incrementOnChainSignalCounter() {
                 }
             })
             .catch(err => console.warn('⚠️ Failed to update on-chain signal counter:', err));
+    }
+}
+
+/**
+ * Display blockchain trade history
+ */
+async function displayBlockchainHistory() {
+    const info = lineraManager.getWalletInfo();
+    
+    if (!info.owner) {
+        elements.blockchainHistoryContainer.innerHTML = '<div class="status info">Connect wallet to view blockchain history</div>';
+        elements.blockchainTotalTrades.textContent = '-';
+        elements.blockchainTotalPnl.textContent = '-';
+        return;
+    }
+    
+    try {
+        elements.blockchainHistoryContainer.innerHTML = '<div class="status info">⏳ Loading from blockchain...</div>';
+        
+        // Query user's trades from blockchain
+        const trades = await tradeHistoryContract.getUserTrades(info.owner);
+        const totalPnl = await tradeHistoryContract.getUserTotalPnL(info.owner);
+        
+        // Update stats
+        elements.blockchainTotalTrades.textContent = trades.length;
+        elements.blockchainTotalPnl.textContent = totalPnl >= 0 
+            ? `+$${totalPnl.toFixed(2)}`
+            : `-$${Math.abs(totalPnl).toFixed(2)}`;
+        elements.blockchainTotalPnl.style.color = totalPnl >= 0 ? '#26A69A' : '#EF5350';
+        
+        // Display trades
+        if (trades.length === 0) {
+            elements.blockchainHistoryContainer.innerHTML = '<div class="status info">No trades on blockchain yet</div>';
+            return;
+        }
+        
+        elements.blockchainHistoryContainer.innerHTML = trades
+            .sort((a, b) => b.timestamp - a.timestamp)
+            .slice(0, 10) // Show last 10 trades
+            .map(trade => {
+                const formatted = tradeHistoryContract.formatTrade(trade);
+                const pnlClass = trade.profitLoss >= 0 ? 'positive' : 'negative';
+                
+                return `
+                    <div class="trade-item">
+                        <div class="trade-header">
+                            <span class="trade-coin">${formatted.coin}</span>
+                            <span class="trade-type ${trade.tradeType.toLowerCase()}">${formatted.type}</span>
+                            <span class="trade-pnl ${pnlClass}">${formatted.pnl}</span>
+                        </div>
+                        <div class="trade-details">
+                            <span>Entry: ${formatted.entry}</span>
+                            <span>Exit: ${formatted.exit}</span>
+                            <span>Amount: ${formatted.amount}</span>
+                        </div>
+                        <div class="trade-footer">
+                            <span class="trade-date">${formatted.date}</span>
+                            <span class="trade-badge">⛓️ On-Chain</span>
+                        </div>
+                    </div>
+                `;
+            })
+            .join('');
+        
+        console.log(`✅ Displayed ${trades.length} trades from blockchain`);
+        
+    } catch (error) {
+        console.error('Failed to load blockchain history:', error);
+        elements.blockchainHistoryContainer.innerHTML = '<div class="status error">❌ Failed to load blockchain history</div>';
     }
 }
 
