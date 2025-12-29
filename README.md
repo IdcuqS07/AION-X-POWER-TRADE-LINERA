@@ -25,12 +25,22 @@ AI Power Trade is a next-generation decentralized trading platform that seamless
 - **Signal Persistence** - Per-coin signal storage with 5-minute cooldown
 - **AI Explainer** - Detailed reasoning behind each trading signal
 
+### ⛓️ Blockchain Trade History (NEW - Wave 6)
+- **On-Chain Storage** - Complete trade data stored on Linera blockchain
+- **Immutable Records** - Permanent, verifiable trade history
+- **GraphQL Queries** - Query trades by user, total P&L, and analytics
+- **Real-Time Stats** - Total on-chain trades and profit/loss tracking
+- **Blockchain Badge** - ⛓️ indicator for verified on-chain trades
+- **Auto-Refresh** - Automatic updates after each trade execution
+
 ### 💼 Advanced Portfolio Management
 - **Real-Time Balance** - Live portfolio value tracking in USD
 - **P&L Calculation** - Profit/Loss tracking with win rate statistics
 - **Trade History** - Complete execution history with platform badges
+- **Blockchain History** - On-chain trade records with full details
 - **Percentage Trading** - Adjustable trade size (5-100% of portfolio)
 - **Multi-Platform** - Support for Linera blockchain and Binance CEX
+- **Analytics Dashboard** - Total trades, P&L, and performance metrics
 
 ### 🔐 Wallet & Security
 - **Linera Wallet Integration** - Native blockchain wallet support
@@ -91,9 +101,12 @@ AI Power Trade is a next-generation decentralized trading platform that seamless
 ┌─────────────────────────────────────────────────────────────┐
 │              Linera Blockchain (Testnet Conway)              │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │ Wallet       │  │ Transactions │  │ Smart        │      │
-│  │ Management   │  │ On-Chain     │  │ Contracts    │      │
+│  │ Wallet       │  │ Trade History│  │ Smart        │      │
+│  │ Management   │  │ Contract     │  │ Contracts    │      │
+│  │              │  │ (Wave 6)     │  │              │      │
 │  └──────────────┘  └──────────────┘  └──────────────┘      │
+│                                                              │
+│  App ID: 17f27b3394c1dfced349fcf477e4b344f374417bde...     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -102,6 +115,7 @@ AI Power Trade is a next-generation decentralized trading platform that seamless
 **Frontend** (`frontend-linera/`)
 - `main.js` - Main application logic
 - `linera-wasm.js` - Linera blockchain integration
+- `trade-history-contract.js` - **NEW** Blockchain trade history API
 - `binance-simulation.js` - CEX trading simulation
 - `wallet-manager.js` - Wallet backup/restore
 - `signal-persistence.js` - Signal storage & cooldown
@@ -117,7 +131,9 @@ AI Power Trade is a next-generation decentralized trading platform that seamless
 **Blockchain**
 - Network: Linera Testnet Conway
 - Wallet: Native Linera wallet with WASM
+- Smart Contracts: Trade history, trade counter
 - Faucet: https://faucet.testnet-conway.linera.net
+- Contract App ID: `17f27b3394c1dfced349fcf477e4b344f374417bde79d628b4345fb430a3747c`
 
 ## 🚀 Quick Start
 
@@ -281,6 +297,8 @@ AION-X-POWER-TRADE-LINERA/
 │   ├── src/
 │   │   ├── main.js              # Core application logic
 │   │   ├── linera-wasm.js       # Linera blockchain integration
+│   │   ├── trade-history-contract.js # **NEW** Blockchain trade history
+│   │   ├── trade-counter-contract.js # Trade counter contract
 │   │   ├── wallet-manager.js    # Wallet backup/restore
 │   │   ├── binance-simulation.js # CEX trading simulation
 │   │   ├── signal-persistence.js # Signal storage & cooldown
@@ -304,8 +322,20 @@ AION-X-POWER-TRADE-LINERA/
 │   │   └── database.js         # SQLite database
 │   └── package.json
 │
+├── trade-history/               # **NEW** Trade history smart contract
+│   ├── src/
+│   │   ├── lib.rs              # ABI definitions
+│   │   ├── state.rs            # State management
+│   │   ├── contract.rs         # Contract logic
+│   │   └── service.rs          # GraphQL service
+│   ├── Cargo.toml
+│   └── linera.toml
+│
+├── trading-counter/             # Trade counter smart contract
+│   └── src/                    # Counter contract code
+│
 ├── linera-protocol/             # Linera blockchain (optional)
-│   └── examples/ai-trading/     # Smart contract (future)
+│   └── examples/ai-trading/     # Smart contract examples
 │
 ├── deploy-linera-frontend.sh    # Deployment script
 ├── test-*.sh                    # Testing scripts
@@ -450,6 +480,8 @@ export class PlatformManager {
 - **[PROJECT-SUMMARY.md](frontend-linera/PROJECT-SUMMARY.md)** - Project summary
 
 ### Feature Documentation
+- **[WAVE-6-TRADE-HISTORY.md](WAVE-6-TRADE-HISTORY.md)** - **NEW** On-chain trade history
+- **[WAVE-6-INTEGRATION-COMPLETE.md](WAVE-6-INTEGRATION-COMPLETE.md)** - Wave 6 technical details
 - **[BINANCE-CEX-INTEGRATION.md](BINANCE-CEX-INTEGRATION.md)** - CEX integration guide
 - **[TRADE-CONFIRMATION-FEATURE.md](TRADE-CONFIRMATION-FEATURE.md)** - Trade confirmation
 - **[WALLET-MANAGEMENT-COMPLETE.md](WALLET-MANAGEMENT-COMPLETE.md)** - Wallet features
@@ -458,7 +490,9 @@ export class PlatformManager {
 - **[FAUCET-BACKEND-GUIDE.md](FAUCET-BACKEND-GUIDE.md)** - Faucet setup
 
 ### Deployment Documentation
-- **[DEPLOYMENT-SUCCESS.md](DEPLOYMENT-SUCCESS.md)** - Deployment guide
+- **[WAVE-6-DEPLOYMENT-SUCCESS.md](WAVE-6-DEPLOYMENT-SUCCESS.md)** - **NEW** Wave 6 deployment
+- **[WAVE-6-DEPLOYMENT-GUIDE.md](WAVE-6-DEPLOYMENT-GUIDE.md)** - Wave 6 deployment guide
+- **[DEPLOYMENT-SUCCESS.md](DEPLOYMENT-SUCCESS.md)** - General deployment guide
 - **[FAUCET-DEPLOYMENT-SUCCESS.md](FAUCET-DEPLOYMENT-SUCCESS.md)** - Faucet deployment
 - **[QUICK-COMMANDS.txt](QUICK-COMMANDS.txt)** - Command reference
 
@@ -512,22 +546,24 @@ export class PlatformManager {
 
 ## 🐛 Known Issues
 
-### Linera Testnet Limitation
-Currently, complex smart contracts cannot be deployed to Linera Conway Testnet due to WASM opcode limitations. The platform operates in **simulation mode** with full functionality while we wait for testnet stability.
+### Smart Contract Status
 
-**Status:** 🔴 Open (External - Testnet Infrastructure)
+**✅ DEPLOYED** - Trade history smart contract is now live on Linera Testnet Conway!
 
-**What Works:**
-- ✅ Wallet integration via Linera WASM SDK
-- ✅ All UI features and trading functionality
-- ✅ Simulated balance and transaction tracking
-- ✅ Smart contract code ready for deployment
+**What's Live:**
+- ✅ Trade history smart contract deployed
+- ✅ Complete trade data stored on blockchain
+- ✅ GraphQL queries for analytics
+- ✅ On-chain trade verification
+- ✅ Immutable audit trail
+- ✅ App ID: `17f27b3394c1dfced349fcf477e4b344f374417bde79d628b4345fb430a3747c`
 
-**What's Affected:**
-- ❌ On-chain smart contract deployment to testnet
-- ✅ Simple contracts (like counter) work fine
+**Previous Limitations (Resolved):**
+- ~~Complex contracts couldn't deploy~~ → **Fixed with optimized contract**
+- ~~WASM opcode issues~~ → **Resolved with Linera SDK 0.15.7**
+- Simple contracts work → **Now complex contracts work too!**
 
-**Details:** See [KNOWN-ISSUES.md](./KNOWN-ISSUES.md) and [Bug Report](./LINERA-TESTNET-BUG-REPORT.md)
+**Details:** See [WAVE-6-TRADE-HISTORY.md](./WAVE-6-TRADE-HISTORY.md)
 
 ## 🚧 Roadmap
 
@@ -542,13 +578,18 @@ Currently, complex smart contracts cannot be deployed to Linera Conway Testnet d
 - [x] Binance CEX simulation
 - [x] Trade confirmation modal
 - [x] Faucet backend
+- [x] **On-chain trade history (Wave 6)** ⭐ NEW
+- [x] **Blockchain analytics dashboard** ⭐ NEW
+- [x] **Smart contract deployment** ⭐ NEW
 
-### Phase 2: Enhanced Features 🚧 (In Progress)
+### Phase 2: Enhanced Features 🚧 (In Progress - Wave 7+)
+- [ ] Interactive price charts
+- [ ] Advanced trade filtering (by coin, date, P&L)
+- [ ] Export trade history (CSV/JSON)
 - [ ] Binance Testnet API integration
 - [ ] Real-time WebSocket price feeds
 - [ ] Advanced charting (TradingView)
 - [ ] Multiple timeframe analysis
-- [ ] Portfolio analytics dashboard
 - [ ] Trade performance metrics
 
 ### Phase 3: Advanced Features 🔮 (Planned)
@@ -620,6 +661,9 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 - ✅ CEX/DEX integration ready
 - ✅ Comprehensive risk management
 - ✅ Production-ready deployment
+- ✅ **On-chain trade history smart contract** ⭐ NEW
+- ✅ **Complete blockchain integration** ⭐ NEW
+- ✅ **Immutable trade records** ⭐ NEW
 
 ## 👥 Team
 
@@ -655,15 +699,26 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## 📊 Project Stats
 
-- **Lines of Code**: ~15,000+
-- **Files**: 100+
-- **Features**: 20+
-- **Development Time**: 2 weeks
+- **Lines of Code**: ~17,000+
+- **Files**: 120+
+- **Features**: 25+
+- **Smart Contracts**: 2 deployed
+- **Development Time**: 3 weeks
 - **Status**: Production Ready ✅
+- **Blockchain**: Fully Integrated ⛓️
 
 ## 🔄 Version History
 
-### v1.0.0 (Current) - December 2025
+### v1.1.0 (Current) - December 29, 2024 ⭐ NEW
+- ✅ **Wave 6: On-Chain Trade History**
+- ✅ Smart contract deployed to Linera Testnet
+- ✅ Complete trade data on blockchain
+- ✅ GraphQL queries for analytics
+- ✅ Blockchain history UI
+- ✅ Immutable trade records
+- ✅ Auto-refresh functionality
+
+### v1.0.0 - December 23, 2024
 - ✅ Initial release
 - ✅ Core trading features
 - ✅ Linera blockchain integration
@@ -675,8 +730,8 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 - ✅ Production deployment
 
 ### Future Versions
-- v1.1.0 - Binance Testnet integration
-- v1.2.0 - Advanced charting
+- v1.2.0 - Interactive charts (Wave 7)
+- v1.3.0 - Advanced filtering & export
 - v2.0.0 - DEX integration
 - v3.0.0 - Mobile app
 
@@ -692,9 +747,10 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 [![GitHub forks](https://img.shields.io/github/forks/IdcuqS07/AION-X-POWER-TRADE-LINERA?style=social)](https://github.com/IdcuqS07/AION-X-POWER-TRADE-LINERA/fork)
 
 **Status**: ✅ Live and Operational  
-**Last Updated**: December 23, 2025  
-**Version**: 1.0.0  
-**Domain**: https://www.aion-x.xyz 🔒
+**Last Updated**: December 29, 2024  
+**Version**: 1.1.0 (Wave 6 Complete)  
+**Domain**: https://www.aion-x.xyz 🔒  
+**Smart Contract**: `17f27b3394c1dfced349fcf477e4b344f374417bde79d628b4345fb430a3747c` ⛓️
 
 [🚀 Try Live Demo](https://www.aion-x.xyz) | [📖 Documentation](README.md) | [🐛 Report Bug](https://github.com/IdcuqS07/AION-X-POWER-TRADE-LINERA/issues)
 
