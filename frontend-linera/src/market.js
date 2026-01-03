@@ -20,7 +20,7 @@ export class MarketManager {
         try {
             const symbols = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT'];
             const promises = symbols.map(symbol => 
-                fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`)
+                fetch(`/api/binance/api/v3/ticker/24hr?symbol=${symbol}`)
                     .then(res => res.json())
             );
             

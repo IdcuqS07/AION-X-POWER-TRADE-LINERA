@@ -14,6 +14,13 @@ import SignalPersistenceManager from './signal-persistence.js';
 import { binanceSimulation } from './binance-simulation.js';
 import TradeCounterContract, { initializeContractIntegration, displayContractStats } from './trade-counter-contract.js';
 import { tradeHistoryContract } from './trade-history-contract.js';
+import { tradeHistoryStorage } from './trade-history-storage.js';
+
+// Wave 7: Interactive Charts & Analytics
+import { PriceChart } from './chart.js';
+import { TradeFilter } from './trade-filter.js';
+import { TradeExporter } from './trade-export.js';
+import { TradeAnalytics } from './analytics.js';
 
 // Initialize managers
 const lineraManager = new LineraManager();
@@ -23,6 +30,12 @@ const faucetManager = new FaucetManager();
 const signalCooldown = new SignalCooldownManager();
 const walletManager = new WalletManager();
 const signalPersistence = new SignalPersistenceManager();
+
+// Wave 7: Initialize chart, filter, export, and analytics
+const priceChart = new PriceChart('price-chart-container');
+const tradeFilter = new TradeFilter();
+const tradeExporter = new TradeExporter();
+const tradeAnalytics = new TradeAnalytics();
 
 // Smart contract integration (will be initialized after wallet connection)
 let tradeCounterContract = null;
@@ -1387,21 +1400,70 @@ async function executeTradeConfirmed() {
             }).catch(err => console.warn('⚠️ Failed to update on-chain counter:', err));
         }
         
-        // Save complete trade data to blockchain
+        // Save complete trade data to blockchain (with localStorage fallback)
         try {
-            await tradeHistoryContract.executeTrade(
-                trade.coin,
-                trade.type,
-                execution.executionPrice,
-                execution.executionPrice, // Exit price same as entry for now
-                execution.coinAmount
-            );
-            console.log('✅ Trade saved to blockchain!');
+            console.log('💾 Attempting to save trade to blockchain...');
+            
+            // Get wallet info
+            const info = lineraManager.getWalletInfo();
+            console.log('   Wallet info:', info);
+            console.log('   Owner:', info.owner);
+            console.log('   Chain ID:', info.chainId);
+            
+            // Initialize if needed
+            if (!tradeHistoryContract.chainId || !tradeHistoryContract.owner) {
+                console.warn('⚠️ Contract not initialized, initializing now...');
+                if (info.owner && info.chainId) {
+                    await tradeHistoryContract.initialize(info.chainId, info.owner);
+                    tradeHistoryStorage.initialize(info.owner);
+                    console.log('✅ Storage initialized with owner:', info.owner);
+                } else {
+                    console.warn('⚠️ No wallet connected, using default owner for storage');
+                    // Use a default owner for localStorage
+                    const defaultOwner = '0x0000000000000000000000000000000000000000';
+                    tradeHistoryStorage.initialize(defaultOwner);
+                }
+            }
+            
+            // Ensure storage is initialized
+            if (!tradeHistoryStorage.owner) {
+                const owner = info.owner || '0x0000000000000000000000000000000000000000';
+                tradeHistoryStorage.initialize(owner);
+                console.log('✅ Storage initialized (fallback) with owner:', owner);
+            }
+            
+            // Try blockchain first
+            try {
+                await tradeHistoryContract.executeTrade(
+                    trade.coin,
+                    trade.type,
+                    execution.executionPrice,
+                    execution.executionPrice,
+                    execution.coinAmount
+                );
+                console.log('✅ Trade saved to blockchain!');
+            } catch (blockchainError) {
+                console.warn('⚠️ Blockchain save failed, using localStorage fallback:', blockchainError.message);
+                
+                // Fallback to localStorage
+                await tradeHistoryStorage.saveTrade({
+                    coin: trade.coin,
+                    type: trade.type,
+                    entryPrice: execution.executionPrice,
+                    exitPrice: execution.executionPrice,
+                    amount: execution.coinAmount,
+                    profitLoss: 0 // Will be calculated on exit
+                });
+                console.log('✅ Trade saved to localStorage (blockchain fallback)');
+            }
             
             // Refresh blockchain history display
             await displayBlockchainHistory();
         } catch (err) {
-            console.warn('⚠️ Failed to save trade to blockchain:', err);
+            console.error('❌ Failed to save trade:', err);
+            console.error('   Error details:', err.message);
+            console.error('   Stack:', err.stack);
+            // Continue anyway - trade is still saved locally
         }
         
         // Show success message with execution details
@@ -2564,3 +2626,437 @@ async function displayBlockchainHistory() {
 
 // Call this after signal generation
 // Add after: signalCooldown.saveSignal(selectedCoin, currentSignal);
+
+
+// ========================================
+// WAVE 7: Interactive Charts & Analytics
+// ========================================
+
+// Initialize Wave 7 features
+function initializeWave7() {
+    console.log('🚀 Initializing Wave 7: Interactive Charts & Analytics');
+    
+    try {
+        // Initialize chart
+        if (priceChart && document.getElementById('price-chart-container')) {
+            priceChart.initialize();
+            console.log('✅ Chart initialized');
+            
+            // Load initial chart data (BTC, 1h)
+            priceChart.loadData('BTC', '1h').catch(err => {
+                console.warn('⚠️ Initial chart load failed:', err);
+            });
+        } else {
+            console.warn('⚠️ Chart container not found, skipping chart initialization');
+        }
+        
+        // Setup event listeners
+        setupChartControls();
+        setupFilterControls();
+        setupExportControls();
+        setupAnalyticsControls();
+        
+        // Initial analytics update
+        updateAnalytics();
+        
+        console.log('✅ Wave 7 initialized successfully');
+    } catch (error) {
+        console.error('❌ Wave 7 initialization error:', error);
+        throw error; // Re-throw to be caught by safeInitializeWave7
+    }
+}
+
+// Chart Controls
+function setupChartControls() {
+    try {
+        // Timeframe buttons
+        const timeframeBtns = document.querySelectorAll('.timeframe-btn');
+        if (timeframeBtns.length === 0) {
+            console.warn('⚠️ No timeframe buttons found');
+            return;
+        }
+        
+        timeframeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update active state
+                document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Load new timeframe
+                const timeframe = btn.dataset.timeframe;
+                if (priceChart) {
+                    priceChart.loadData(selectedCoin, timeframe).catch(err => {
+                        console.error('Failed to load chart:', err);
+                    });
+                }
+            });
+        });
+        
+        // Refresh chart button
+        const btnChartRefresh = document.getElementById('btn-chart-refresh');
+        if (btnChartRefresh) {
+            btnChartRefresh.addEventListener('click', () => {
+                const activeTimeframe = document.querySelector('.timeframe-btn.active');
+                const timeframe = activeTimeframe ? activeTimeframe.dataset.timeframe : '1h';
+                if (priceChart) {
+                    priceChart.loadData(selectedCoin, timeframe).catch(err => {
+                        console.error('Failed to refresh chart:', err);
+                    });
+                }
+            });
+        }
+        
+        // Real-time toggle button
+        const btnChartRealtime = document.getElementById('btn-chart-realtime');
+        if (btnChartRealtime) {
+            let isRealtime = false;
+            btnChartRealtime.addEventListener('click', () => {
+                isRealtime = !isRealtime;
+                if (isRealtime && priceChart) {
+                    priceChart.startRealTimeUpdates();
+                    btnChartRealtime.textContent = '⏸️ Stop Real-Time';
+                    btnChartRealtime.style.background = 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+                } else if (priceChart) {
+                    priceChart.stopRealTimeUpdates();
+                    btnChartRealtime.textContent = '▶️ Start Real-Time';
+                    btnChartRealtime.style.background = '';
+                }
+            });
+        }
+        
+        // Update chart when coin changes
+        const coinBtns = document.querySelectorAll('.coin-btn');
+        coinBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const coin = btn.dataset.coin;
+                const activeTimeframe = document.querySelector('.timeframe-btn.active');
+                const timeframe = activeTimeframe ? activeTimeframe.dataset.timeframe : '1h';
+                if (priceChart) {
+                    priceChart.loadData(coin, timeframe).catch(err => {
+                        console.error('Failed to load chart for coin:', err);
+                    });
+                }
+            });
+        });
+        
+        console.log('✅ Chart controls setup complete');
+    } catch (error) {
+        console.error('❌ Chart controls setup failed:', error);
+    }
+}
+
+// Filter Controls
+function setupFilterControls() {
+    const btnApplyFilter = document.getElementById('btn-apply-filter');
+    const btnResetFilter = document.getElementById('btn-reset-filter');
+    const filterSummary = document.getElementById('filter-summary');
+    
+    if (btnApplyFilter) {
+        btnApplyFilter.addEventListener('click', () => {
+            // Get filter values
+            tradeFilter.setFilter('coin', document.getElementById('filter-coin').value);
+            tradeFilter.setFilter('dateRange', document.getElementById('filter-date').value);
+            tradeFilter.setFilter('pnl', document.getElementById('filter-pnl').value);
+            tradeFilter.setFilter('platform', document.getElementById('filter-platform').value);
+            tradeFilter.setFilter('tradeType', document.getElementById('filter-type').value);
+            tradeFilter.setFilter('searchQuery', document.getElementById('filter-search').value);
+            
+            // Update summary
+            if (filterSummary) {
+                filterSummary.textContent = tradeFilter.getFilterSummary();
+            }
+            
+            // Apply filters and update displays
+            applyFiltersAndUpdate();
+        });
+    }
+    
+    if (btnResetFilter) {
+        btnResetFilter.addEventListener('click', () => {
+            tradeFilter.resetFilters();
+            
+            // Reset UI
+            document.getElementById('filter-coin').value = 'ALL';
+            document.getElementById('filter-date').value = 'last7days';
+            document.getElementById('filter-pnl').value = 'all';
+            document.getElementById('filter-platform').value = 'all';
+            document.getElementById('filter-type').value = 'all';
+            document.getElementById('filter-search').value = '';
+            
+            if (filterSummary) {
+                filterSummary.textContent = 'No filters applied';
+            }
+            
+            // Refresh displays
+            applyFiltersAndUpdate();
+        });
+    }
+}
+
+function applyFiltersAndUpdate() {
+    // Get all trades
+    const allTrades = getAllTrades();
+    
+    // Apply filters
+    const filteredTrades = tradeFilter.filterTrades(allTrades);
+    
+    // Update trade history display
+    displayFilteredTrades(filteredTrades);
+    
+    // Update analytics with filtered data
+    tradeAnalytics.setTrades(filteredTrades);
+    updateAnalytics();
+}
+
+function getAllTrades() {
+    // Combine localStorage and blockchain trades
+    const localTrades = JSON.parse(localStorage.getItem('trade_history') || '[]');
+    const blockchainTrades = JSON.parse(localStorage.getItem('blockchain_trade_history') || '[]');
+    
+    return [...localTrades, ...blockchainTrades];
+}
+
+function displayFilteredTrades(trades) {
+    const container = elements.historyContainer;
+    
+    if (!trades || trades.length === 0) {
+        container.innerHTML = '<div class="status info">No trades match your filters</div>';
+        return;
+    }
+    
+    container.innerHTML = trades
+        .slice(0, 20) // Show last 20
+        .map(trade => {
+            const pnl = trade.pnl || 0;
+            const pnlClass = pnl > 0 ? 'profit' : pnl < 0 ? 'loss' : '';
+            const pnlSign = pnl > 0 ? '+' : '';
+            
+            return `
+                <div class="trade-item">
+                    <div class="trade-header">
+                        <span class="trade-coin">${trade.coin}</span>
+                        <span class="trade-type ${trade.tradeType.toLowerCase()}">${trade.tradeType}</span>
+                        <span class="trade-pnl ${pnlClass}">${pnlSign}$${Math.abs(pnl).toFixed(2)}</span>
+                    </div>
+                    <div class="trade-details">
+                        <span>Entry: $${trade.entryPrice.toFixed(2)}</span>
+                        <span>Exit: $${trade.exitPrice ? trade.exitPrice.toFixed(2) : '-'}</span>
+                        <span>Amount: ${trade.amount.toFixed(6)}</span>
+                    </div>
+                    <div class="trade-footer">
+                        <span class="trade-date">${new Date(trade.timestamp).toLocaleString()}</span>
+                        <span class="trade-badge">${trade.platform || 'Linera'}</span>
+                    </div>
+                </div>
+            `;
+        })
+        .join('');
+}
+
+// Export Controls
+function setupExportControls() {
+    const btnExportCSV = document.getElementById('btn-export-csv');
+    const btnExportJSON = document.getElementById('btn-export-json');
+    
+    if (btnExportCSV) {
+        btnExportCSV.addEventListener('click', () => {
+            const allTrades = getAllTrades();
+            const filteredTrades = tradeFilter.filterTrades(allTrades);
+            
+            if (filteredTrades.length === 0) {
+                alert('No trades to export. Execute some trades first!');
+                return;
+            }
+            
+            const success = tradeExporter.exportToCSV(filteredTrades);
+            if (success) {
+                showNotification('✅ Trades exported to CSV successfully!', 'success');
+            } else {
+                showNotification('❌ Failed to export trades', 'error');
+            }
+        });
+    }
+    
+    if (btnExportJSON) {
+        btnExportJSON.addEventListener('click', () => {
+            const allTrades = getAllTrades();
+            const filteredTrades = tradeFilter.filterTrades(allTrades);
+            
+            if (filteredTrades.length === 0) {
+                alert('No trades to export. Execute some trades first!');
+                return;
+            }
+            
+            const success = tradeExporter.exportToJSON(filteredTrades, true);
+            if (success) {
+                showNotification('✅ Trades exported to JSON successfully!', 'success');
+            } else {
+                showNotification('❌ Failed to export trades', 'error');
+            }
+        });
+    }
+}
+
+// Analytics Controls
+function setupAnalyticsControls() {
+    const btnRefreshAnalytics = document.getElementById('btn-refresh-analytics');
+    
+    if (btnRefreshAnalytics) {
+        btnRefreshAnalytics.addEventListener('click', () => {
+            updateAnalytics();
+            showNotification('✅ Analytics refreshed', 'success');
+        });
+    }
+}
+
+function updateAnalytics() {
+    const allTrades = getAllTrades();
+    const filteredTrades = tradeFilter.filterTrades(allTrades);
+    
+    tradeAnalytics.setTrades(filteredTrades);
+    
+    // Update overview metrics
+    const overview = tradeAnalytics.getOverviewMetrics();
+    updateElement('analytics-total-trades', overview.totalTrades);
+    updateElement('analytics-total-pnl', formatCurrency(overview.totalPnL));
+    updateElement('analytics-win-rate', `${overview.winRate}%`);
+    updateElement('analytics-avg-pnl', formatCurrency(overview.avgPnL));
+    
+    if (overview.bestTrade) {
+        updateElement('analytics-best-trade', `${overview.bestTrade.coin} +${formatCurrency(overview.bestTrade.pnl)}`);
+    } else {
+        updateElement('analytics-best-trade', '-');
+    }
+    
+    if (overview.worstTrade) {
+        updateElement('analytics-worst-trade', `${overview.worstTrade.coin} ${formatCurrency(overview.worstTrade.pnl)}`);
+    } else {
+        updateElement('analytics-worst-trade', '-');
+    }
+    
+    // Update by coin metrics
+    const byCoin = tradeAnalytics.getByCoinMetrics();
+    displayByCoinMetrics(byCoin);
+    
+    // Update recent performance
+    const recent = tradeAnalytics.getRecentPerformance(7);
+    updateElement('recent-trades', recent.trades);
+    updateElement('recent-pnl', formatCurrency(recent.pnl));
+    updateElement('recent-winrate', `${recent.winRate}%`);
+    updateElement('recent-avg', formatCurrency(recent.avgPnL));
+}
+
+function displayByCoinMetrics(coinMetrics) {
+    const container = document.getElementById('analytics-by-coin');
+    
+    if (!coinMetrics || coinMetrics.length === 0) {
+        container.innerHTML = '<div class="status info">No trade data available</div>';
+        return;
+    }
+    
+    const coinIcons = {
+        'BTC': '₿',
+        'ETH': 'Ξ',
+        'SOL': '◎',
+        'BNB': '◆'
+    };
+    
+    container.innerHTML = `
+        <div class="analytics-table-row analytics-table-header">
+            <div>Coin</div>
+            <div>Trades</div>
+            <div>P&L</div>
+            <div>Win Rate</div>
+        </div>
+        ${coinMetrics.map(coin => `
+            <div class="analytics-table-row">
+                <div class="analytics-coin-name">
+                    <span class="analytics-coin-icon">${coinIcons[coin.coin] || '💰'}</span>
+                    <span>${coin.coin}</span>
+                </div>
+                <div class="analytics-table-cell">${coin.trades}</div>
+                <div class="analytics-table-cell ${coin.pnl >= 0 ? 'profit' : 'loss'}">
+                    ${formatCurrency(coin.pnl)}
+                </div>
+                <div class="analytics-table-cell">${coin.winRate}%</div>
+            </div>
+        `).join('')}
+    `;
+}
+
+function updateElement(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.textContent = value;
+    }
+}
+
+function formatCurrency(value) {
+    const num = parseFloat(value);
+    if (isNaN(num)) return '$0.00';
+    
+    const sign = num >= 0 ? '+' : '';
+    return `${sign}$${Math.abs(num).toFixed(2)}`;
+}
+
+function showNotification(message, type = 'info') {
+    const status = elements.globalStatus;
+    if (status) {
+        status.textContent = message;
+        status.className = `status ${type}`;
+        
+        setTimeout(() => {
+            status.textContent = 'Ready';
+            status.className = 'status info';
+        }, 3000);
+    }
+}
+
+// Add trade marker to chart after execution
+function addTradeToChart(trade) {
+    if (priceChart && trade) {
+        priceChart.addTradeMarker(trade);
+    }
+}
+
+// Initialize Wave 7 independently (don't wait for WASM)
+function safeInitializeWave7() {
+    try {
+        console.log('🚀 Starting Wave 7 initialization...');
+        initializeWave7();
+        console.log('✅ Wave 7 initialized successfully');
+    } catch (error) {
+        console.error('❌ Wave 7 initialization failed:', error);
+        // Show error to user
+        const container = document.querySelector('.wave7-section');
+        if (container) {
+            container.innerHTML = `
+                <div class="card">
+                    <h3 style="color: #ef5350;">⚠️ Wave 7 Features Temporarily Unavailable</h3>
+                    <p>Charts and analytics are loading. Please refresh the page.</p>
+                    <button class="btn" onclick="location.reload()">🔄 Refresh Page</button>
+                </div>
+            `;
+        }
+    }
+}
+
+// Initialize Wave 7 when DOM is ready (independent of WASM)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', safeInitializeWave7);
+} else {
+    // DOM already loaded, initialize immediately
+    setTimeout(safeInitializeWave7, 100);
+}
+
+// Export for use in other modules
+window.wave7 = {
+    priceChart,
+    tradeFilter,
+    tradeExporter,
+    tradeAnalytics,
+    updateAnalytics,
+    addTradeToChart
+};
+
+console.log('✅ Wave 7 modules loaded and ready');
