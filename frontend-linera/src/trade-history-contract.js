@@ -61,7 +61,11 @@ export class TradeHistoryContract {
      * Execute operation on contract
      */
     async executeOperation(operation) {
-        const url = `https://conway1.linera.blockhunters.services/chains/${this.chainId}/applications/${this.appId}`;
+        // Use proxy to avoid CORS issues
+        const baseUrl = window.location.hostname === 'localhost' 
+            ? 'http://localhost:5173/linera'
+            : 'https://aion-x.xyz/linera';
+        const url = `${baseUrl}/chains/${this.chainId}/applications/${this.appId}`;
         
         const response = await fetch(url, {
             method: 'POST',
@@ -104,7 +108,13 @@ export class TradeHistoryContract {
             const result = await this.queryContract(query);
             return result.data.userTrades;
         } catch (error) {
-            console.error('❌ Failed to query user trades:', error);
+            console.warn('⚠️ Blockchain unavailable, using localStorage for trades');
+            // Fallback to localStorage - use correct key
+            const stored = localStorage.getItem('blockchain_trade_history');
+            if (stored) {
+                const trades = JSON.parse(stored);
+                return trades.filter(t => t.user === user);
+            }
             return [];
         }
     }
@@ -142,7 +152,14 @@ export class TradeHistoryContract {
             const result = await this.queryContract(query);
             return result.data.userTotalPnl;
         } catch (error) {
-            console.error('❌ Failed to query user P&L:', error);
+            console.warn('⚠️ Blockchain unavailable, calculating P&L from localStorage');
+            // Fallback to localStorage - use correct key
+            const stored = localStorage.getItem('blockchain_trade_history');
+            if (stored) {
+                const trades = JSON.parse(stored);
+                const userTrades = trades.filter(t => t.user === user);
+                return userTrades.reduce((total, trade) => total + (trade.profitLoss || 0), 0);
+            }
             return 0;
         }
     }
@@ -180,21 +197,45 @@ export class TradeHistoryContract {
      * Query contract via GraphQL
      */
     async queryContract(query) {
-        const url = `https://conway1.linera.blockhunters.services/chains/${this.chainId}/applications/${this.appId}`;
+        // Use proxy to avoid CORS issues
+        const baseUrl = window.location.hostname === 'localhost' 
+            ? 'http://localhost:5173/linera'
+            : 'https://aion-x.xyz/linera';
+        const url = `${baseUrl}/chains/${this.chainId}/applications/${this.appId}`;
         
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ query })
-        });
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query })
+            });
 
-        if (!response.ok) {
-            throw new Error(`Contract query failed: ${response.statusText}`);
+            if (!response.ok) {
+                console.warn(`⚠️ Contract query returned ${response.status}, falling back to localStorage`);
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            // Check if response has content
+            const contentLength = response.headers.get('content-length');
+            if (contentLength === '0' || contentLength === null) {
+                console.warn('⚠️ Empty response from blockchain, falling back to localStorage');
+                throw new Error('Empty response');
+            }
+
+            const text = await response.text();
+            if (!text || text.trim() === '') {
+                console.warn('⚠️ Empty response body, falling back to localStorage');
+                throw new Error('Empty response body');
+            }
+
+            return JSON.parse(text);
+        } catch (error) {
+            console.warn('⚠️ Blockchain query failed, using localStorage fallback:', error.message);
+            // Fallback to localStorage
+            throw error; // Let caller handle fallback
         }
-
-        return await response.json();
     }
 
     /**
